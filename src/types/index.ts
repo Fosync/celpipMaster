@@ -2,16 +2,41 @@
 // CelpipMaster - Core Type Definitions
 // ==========================================
 
-// User & Auth
-export interface User {
+export type {
+  LearningItem,
+  LearningSet,
+  QuestionType,
+  MasteryStatus,
+  WordMastery,
+  SetResult,
+  MasteryStore,
+  QueueEntry,
+} from './learning';
+
+// User Profile (matches public.profiles table)
+export interface Profile {
   id: string;
-  email: string;
-  name: string;
-  avatar_url?: string;
-  level: number;
-  xp: number;
-  streak: number;
-  created_at: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  current_clb_level: number | null;
+  target_clb_level: number | null;
+  native_language: string | null;
+  streak_days: number | null;
+  longest_streak: number | null;
+  total_xp: number | null;
+  daily_xp_goal: number | null;
+  last_active_date: string | null;
+  placement_completed: boolean | null;
+  onboarding_completed: boolean | null;
+  subscription_tier: 'free' | 'pro' | 'lifetime' | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+// Auth
+export interface AuthActionResult {
+  error?: string;
+  success?: boolean;
 }
 
 // Learning System

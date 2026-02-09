@@ -132,13 +132,13 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/login"
+              href="/auth/login"
               className="hidden text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600 sm:block"
             >
               Log in
             </Link>
             <Link
-              href="/signup"
+              href="/auth/register"
               className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30"
             >
               Get Started
@@ -182,7 +182,7 @@ export default function Home() {
           {/* CTA Buttons */}
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/signup"
+              href="/auth/register"
               className="group flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-xl shadow-blue-500/25 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-blue-500/30 sm:w-auto"
             >
               Start Learning Free
@@ -365,7 +365,7 @@ export default function Home() {
                 </ul>
 
                 <Link
-                  href="/signup"
+                  href="/auth/register"
                   className={`w-full rounded-full py-3 text-center text-sm font-semibold transition-all ${
                     plan.highlighted
                       ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30"
@@ -397,7 +397,7 @@ export default function Home() {
                 Join thousands of learners who improved their CELPIP scores with AI-powered practice.
               </p>
               <Link
-                href="/signup"
+                href="/auth/register"
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-semibold text-blue-600 shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"
               >
                 Get Started for Free
