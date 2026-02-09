@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import type { Profile } from '@/types';
+import { ContinueLearning } from '@/components/dashboard/continue-learning';
 
 const demoProfile: Profile = {
   id: 'demo',
@@ -21,54 +22,73 @@ const demoProfile: Profile = {
   updated_at: null,
 };
 
-const quickAccessCards = [
+const learnCards = [
   {
     title: 'Vocabulary',
     description: 'Learn new words and build your CELPIP vocabulary',
     href: '/learn/vocabulary',
     icon: '📚',
-    color: 'bg-blue-50 border-blue-200 hover:border-blue-400',
-    iconBg: 'bg-blue-100',
+    gradient: 'from-blue-500 to-blue-600',
+    lightBg: 'bg-blue-50',
+  },
+  {
+    title: 'Idioms',
+    description: 'Master common English idioms and expressions',
+    href: '/learn/idioms',
+    icon: '💬',
+    gradient: 'from-teal-500 to-teal-600',
+    lightBg: 'bg-teal-50',
   },
   {
     title: 'Grammar',
     description: 'Master grammar rules for better scores',
     href: '/learn/grammar',
     icon: '✏️',
-    color: 'bg-purple-50 border-purple-200 hover:border-purple-400',
-    iconBg: 'bg-purple-100',
+    gradient: 'from-purple-500 to-purple-600',
+    lightBg: 'bg-purple-50',
   },
   {
     title: 'Reading',
     description: 'Practice reading comprehension passages',
     href: '/learn/reading',
     icon: '📖',
-    color: 'bg-green-50 border-green-200 hover:border-green-400',
-    iconBg: 'bg-green-100',
+    gradient: 'from-green-500 to-emerald-600',
+    lightBg: 'bg-green-50',
   },
   {
     title: 'Writing',
-    description: 'Get AI feedback on emails and surveys',
-    href: '/exam/writing',
+    description: 'Practice emails and survey responses',
+    href: '/learn/writing',
     icon: '✍️',
-    color: 'bg-amber-50 border-amber-200 hover:border-amber-400',
-    iconBg: 'bg-amber-100',
+    gradient: 'from-amber-500 to-orange-600',
+    lightBg: 'bg-amber-50',
   },
   {
-    title: 'Speaking',
+    title: 'Listening',
+    description: 'Improve listening with audio scripts',
+    href: '/learn/listening',
+    icon: '🎧',
+    gradient: 'from-cyan-500 to-blue-600',
+    lightBg: 'bg-cyan-50',
+  },
+];
+
+const examCards = [
+  {
+    title: 'Speaking Practice',
     description: 'Practice speaking with AI voice coach',
     href: '/speaking',
     icon: '🎤',
-    color: 'bg-rose-50 border-rose-200 hover:border-rose-400',
-    iconBg: 'bg-rose-100',
+    gradient: 'from-rose-500 to-pink-600',
+    lightBg: 'bg-rose-50',
   },
   {
     title: 'Mock Exam',
     description: 'Take a full CELPIP practice test',
     href: '/exam',
     icon: '📝',
-    color: 'bg-indigo-50 border-indigo-200 hover:border-indigo-400',
-    iconBg: 'bg-indigo-100',
+    gradient: 'from-indigo-500 to-violet-600',
+    lightBg: 'bg-indigo-50',
   },
 ];
 
@@ -172,21 +192,50 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick Access */}
+      {/* Continue Learning (client-side, reads localStorage mastery) */}
+      <ContinueLearning />
+
+      {/* Learn Section */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Quick Access</h2>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Learn</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {quickAccessCards.map((card) => (
+          {learnCards.map((card) => (
             <Link
               key={card.href}
               href={card.href}
-              className={`group flex items-start gap-4 rounded-2xl border p-5 transition-all hover:-translate-y-0.5 hover:shadow-md ${card.color}`}
+              className="group flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg"
             >
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${card.iconBg}`}>
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} text-2xl shadow-sm`}>
                 {card.icon}
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">{card.title}</h3>
+                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">
+                  {card.title}
+                </h3>
+                <p className="mt-0.5 text-sm text-gray-500">{card.description}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Practice & Exam Section */}
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Practice & Exam</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {examCards.map((card) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              className="group flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} text-2xl shadow-sm`}>
+                {card.icon}
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">
+                  {card.title}
+                </h3>
                 <p className="mt-0.5 text-sm text-gray-500">{card.description}</p>
               </div>
             </Link>
