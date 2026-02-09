@@ -32,7 +32,7 @@ const navItems = [
   { label: 'Idioms', href: '/learn/idioms', icon: BookIcon },
   { label: 'Grammar', href: '/learn/grammar', icon: PencilIcon },
   { label: 'Reading', href: '/learn/reading', icon: GlassesIcon },
-  { label: 'Writing', href: '/exam/writing', icon: FileTextIcon },
+  { label: 'Writing', href: '/learn/writing', icon: FileTextIcon },
   { label: 'Speaking', href: '/speaking', icon: MicIcon },
   { label: 'Mock Exam', href: '/exam', icon: ClipboardListIcon },
   { label: 'Profile', href: '/profile', icon: UserIcon },
