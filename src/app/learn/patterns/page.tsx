@@ -1,21 +1,25 @@
-import Link from 'next/link';
+import { patternSets } from '@/lib/data/patterns';
+import { VocabSetGrid } from '@/components/learning/vocab-set-grid';
 
-export default function PatternSentences() {
+export const metadata = {
+  title: 'Pattern Sentences | CelpipMaster',
+  description: 'Learn useful sentence patterns for CELPIP writing and speaking.',
+};
+
+export default function PatternsPage() {
+  const setsData = patternSets.map((set) => ({
+    id: set.id,
+    title: set.title,
+    description: set.description,
+    clbLevel: set.clbLevel,
+    icon: set.icon,
+    wordCount: set.words.length,
+    wordIds: set.words.map((w) => w.id),
+  }));
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
-      <div className="rounded-3xl border border-gray-200 bg-white p-12 shadow-lg">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-4xl">
-          🔤
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900">Pattern Sentences</h1>
-        <p className="mt-2 text-gray-500">This module is coming soon. Stay tuned!</p>
-        <Link
-          href="/dashboard"
-          className="mt-6 inline-block rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl"
-        >
-          Back to Dashboard
-        </Link>
-      </div>
+    <div className="mx-auto max-w-4xl">
+      <VocabSetGrid sets={setsData} backHref="/dashboard" title="Pattern Sentences" basePath="/learn/patterns" />
     </div>
   );
 }

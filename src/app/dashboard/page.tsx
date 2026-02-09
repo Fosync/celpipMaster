@@ -71,6 +71,14 @@ const learnCards = [
     gradient: 'from-cyan-500 to-blue-600',
     lightBg: 'bg-cyan-50',
   },
+  {
+    title: 'Patterns',
+    description: 'Learn sentence patterns for writing & speaking',
+    href: '/learn/patterns',
+    icon: '🧩',
+    gradient: 'from-pink-500 to-rose-600',
+    lightBg: 'bg-pink-50',
+  },
 ];
 
 const examCards = [
