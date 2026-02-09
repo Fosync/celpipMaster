@@ -20,6 +20,7 @@ import {
   MenuIcon,
   XIcon,
 } from '@/components/ui/icons';
+import { Breadcrumbs } from './breadcrumbs';
 
 interface DashboardShellProps {
   profile: Profile | null;
@@ -182,6 +183,7 @@ export function DashboardShell({ profile, userEmail, children }: DashboardShellP
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <Breadcrumbs />
           {children}
         </main>
       </div>

@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function ProfileSettings() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
+    <div className="mx-auto max-w-4xl py-8 text-center">
       <div className="rounded-3xl border border-gray-200 bg-white p-12 shadow-lg">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-4xl">
           👤
