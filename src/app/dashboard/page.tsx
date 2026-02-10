@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import type { Profile } from '@/types';
 import { ContinueLearning } from '@/components/dashboard/continue-learning';
+import { ProgressWidgets } from '@/components/dashboard/progress-widgets';
 
 const demoProfile: Profile = {
   id: 'demo',
@@ -199,6 +200,9 @@ export default async function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* Cross-module progress widgets */}
+      <ProgressWidgets />
 
       {/* Continue Learning (client-side, reads localStorage mastery) */}
       <ContinueLearning />

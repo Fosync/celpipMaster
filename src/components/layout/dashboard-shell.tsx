@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Profile } from '@/types';
@@ -23,6 +23,7 @@ import {
   XIcon,
 } from '@/components/ui/icons';
 import { Breadcrumbs } from './breadcrumbs';
+import { getModuleStats, type ModuleName } from '@/lib/progress/cross-tracker';
 
 interface DashboardShellProps {
   profile: Profile | null;
@@ -30,17 +31,22 @@ interface DashboardShellProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+const navItems: {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  module?: ModuleName;
+}[] = [
   { label: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { label: 'Vocabulary', href: '/learn/vocabulary', icon: BookIcon },
-  { label: 'Idioms', href: '/learn/idioms', icon: BookIcon },
-  { label: 'Grammar', href: '/learn/grammar', icon: PencilIcon },
-  { label: 'Reading', href: '/learn/reading', icon: GlassesIcon },
-  { label: 'Writing', href: '/learn/writing', icon: FileTextIcon },
-  { label: 'Listening', href: '/learn/listening', icon: HeadphonesIcon },
-  { label: 'Patterns', href: '/learn/patterns', icon: PuzzleIcon },
-  { label: 'Shadowing', href: '/learn/shadowing', icon: RepeatIcon },
-  { label: 'Speaking', href: '/speaking', icon: MicIcon },
+  { label: 'Vocabulary', href: '/learn/vocabulary', icon: BookIcon, module: 'vocabulary' },
+  { label: 'Idioms', href: '/learn/idioms', icon: BookIcon, module: 'idioms' },
+  { label: 'Grammar', href: '/learn/grammar', icon: PencilIcon, module: 'grammar' },
+  { label: 'Reading', href: '/learn/reading', icon: GlassesIcon, module: 'reading' },
+  { label: 'Writing', href: '/learn/writing', icon: FileTextIcon, module: 'writing' },
+  { label: 'Listening', href: '/learn/listening', icon: HeadphonesIcon, module: 'listening' },
+  { label: 'Patterns', href: '/learn/patterns', icon: PuzzleIcon, module: 'patterns' },
+  { label: 'Shadowing', href: '/learn/shadowing', icon: RepeatIcon, module: 'shadowing' },
+  { label: 'Speaking', href: '/speaking', icon: MicIcon, module: 'speaking' },
   { label: 'Mock Exam', href: '/exam', icon: ClipboardListIcon },
   { label: 'Profile', href: '/profile', icon: UserIcon },
 ];
@@ -48,6 +54,16 @@ const navItems = [
 export function DashboardShell({ profile, userEmail, children }: DashboardShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [moduleProgress, setModuleProgress] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const stats = getModuleStats();
+    const map: Record<string, number> = {};
+    for (const s of stats) {
+      map[s.module] = s.percentage;
+    }
+    setModuleProgress(map);
+  }, [pathname]);
 
   const displayName = profile?.full_name || userEmail.split('@')[0];
   const initials = (profile?.full_name || userEmail)
@@ -112,7 +128,20 @@ export function DashboardShell({ profile, userEmail, children }: DashboardShellP
                 }`}
               >
                 <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.module && moduleProgress[item.module] !== undefined && moduleProgress[item.module] > 0 && (
+                  <span
+                    className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                      moduleProgress[item.module] >= 100
+                        ? 'bg-green-100 text-green-700'
+                        : moduleProgress[item.module] >= 50
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {moduleProgress[item.module]}%
+                  </span>
+                )}
               </Link>
             );
           })}
