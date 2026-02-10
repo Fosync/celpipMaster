@@ -6,6 +6,7 @@ import type { ListeningScript, ListeningSegment } from '@/lib/data/listening/typ
 import type { VocabWord } from '@/lib/data/vocabulary/types';
 import { highlightVocabInText } from '@/lib/utils/vocab-highlighter';
 import { WordPopup } from './word-popup';
+import { useGoogleTTS, type TTSVoice } from '@/hooks/use-google-tts';
 
 interface ListeningEngineProps {
   script: ListeningScript;
@@ -36,10 +37,6 @@ function HighlightedText({ text, vocabWords }: { text: string; vocabWords: Vocab
 
 type Phase = 'ready' | 'playing' | 'questions' | 'result';
 
-interface VoiceMap {
-  [speaker: string]: SpeechSynthesisVoice | null;
-}
-
 export function ListeningEngine({ script, backHref, vocabWords = [] }: ListeningEngineProps) {
   const [phase, setPhase] = useState<Phase>('ready');
   const [currentSegment, setCurrentSegment] = useState(0);
@@ -51,55 +48,9 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
   const [timerActive, setTimerActive] = useState(false);
   const [playCount, setPlayCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const voiceMap = useRef<VoiceMap>({});
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef(false);
-
-  // Load voices and assign different ones to speakers
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-
-    const assignVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length === 0) return;
-
-      const enVoices = voices.filter((v) => v.lang.startsWith('en'));
-      const femaleKeywords = ['female', 'samantha', 'zira', 'karen', 'fiona', 'victoria', 'susan'];
-      const maleKeywords = ['male', 'daniel', 'david', 'james', 'alex', 'tom', 'google us english'];
-
-      const femaleVoices = enVoices.filter((v) =>
-        femaleKeywords.some((k) => v.name.toLowerCase().includes(k))
-      );
-      const maleVoices = enVoices.filter((v) =>
-        maleKeywords.some((k) => v.name.toLowerCase().includes(k))
-      );
-
-      // Fallback: split all English voices roughly
-      const fallbackFemale = femaleVoices.length > 0 ? femaleVoices : enVoices.slice(0, Math.ceil(enVoices.length / 2));
-      const fallbackMale = maleVoices.length > 0 ? maleVoices : enVoices.slice(Math.ceil(enVoices.length / 2));
-
-      const speakers = [...new Set(script.segments.map((s) => s.speaker))];
-      let femaleIdx = 0;
-      let maleIdx = 0;
-
-      speakers.forEach((speaker) => {
-        const seg = script.segments.find((s) => s.speaker === speaker);
-        if (seg?.voiceGender === 'female') {
-          voiceMap.current[speaker] = fallbackFemale[femaleIdx % fallbackFemale.length] || null;
-          femaleIdx++;
-        } else {
-          voiceMap.current[speaker] = fallbackMale[maleIdx % fallbackMale.length] || null;
-          maleIdx++;
-        }
-      });
-    };
-
-    assignVoices();
-    window.speechSynthesis.addEventListener('voiceschanged', assignVoices);
-    return () => {
-      window.speechSynthesis.removeEventListener('voiceschanged', assignVoices);
-    };
-  }, [script.segments]);
+  const tts = useGoogleTTS();
 
   // Timer for question phase
   useEffect(() => {
@@ -126,31 +77,17 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
   };
 
   const speakSegment = useCallback(
-    (segment: ListeningSegment): Promise<void> => {
-      return new Promise((resolve) => {
-        if (typeof window === 'undefined' || !window.speechSynthesis) {
-          resolve();
-          return;
-        }
-        const utterance = new SpeechSynthesisUtterance(segment.text);
-        utterance.lang = 'en-US';
-        utterance.rate = 0.9;
-        utterance.volume = 1.0;
-        const voice = voiceMap.current[segment.speaker];
-        if (voice) utterance.voice = voice;
-        // Adjust pitch for gender differentiation
-        utterance.pitch = segment.voiceGender === 'female' ? 1.15 : 0.9;
-        utterance.onend = () => resolve();
-        utterance.onerror = () => resolve();
-        window.speechSynthesis.speak(utterance);
-      });
+    async (segment: ListeningSegment): Promise<void> => {
+      const voice: TTSVoice = segment.voiceGender === 'female'
+        ? 'en-US-Neural2-C'
+        : 'en-US-Neural2-D';
+      await tts.playText(segment.text, voice, 0.95);
     },
-    []
+    [tts]
   );
 
   const playAllSegments = useCallback(async () => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
+    tts.stop();
     abortRef.current = false;
     setIsPlaying(true);
     setCurrentSegment(0);
@@ -179,9 +116,7 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
   }, [playAllSegments]);
 
   const handleStartQuestions = useCallback(() => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
+    tts.stop();
     abortRef.current = true;
     setIsPlaying(false);
     setPhase('questions');
@@ -219,11 +154,10 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
   useEffect(() => {
     return () => {
       abortRef.current = true;
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
+      tts.stop();
       if (timerRef.current) clearInterval(timerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const correctCount = selectedAnswers.filter(

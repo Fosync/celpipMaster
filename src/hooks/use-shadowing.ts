@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useGoogleTTS } from './use-google-tts';
 
 export interface WordComparison {
   word: string;
@@ -82,14 +83,13 @@ type SpeechRecognitionInstance = {
 };
 
 export function useShadowing() {
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [comparison, setComparison] = useState<ComparisonResult | null>(null);
   const [sttSupported, setSttSupported] = useState(true);
 
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const tts = useGoogleTTS();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -101,13 +101,12 @@ export function useShadowing() {
       }
     }
     return () => {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
+      tts.stop();
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getRate = useCallback((speed: 'slow' | 'normal' | 'fast'): number => {
@@ -119,28 +118,12 @@ export function useShadowing() {
   }, []);
 
   const playSentence = useCallback((text: string, speed: 'slow' | 'normal' | 'fast') => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = 'en-US';
-    utt.rate = getRate(speed);
-    utt.volume = 1.0;
-
-    utt.onstart = () => setIsPlaying(true);
-    utt.onend = () => setIsPlaying(false);
-    utt.onerror = () => setIsPlaying(false);
-
-    utteranceRef.current = utt;
-    window.speechSynthesis.speak(utt);
-  }, [getRate]);
+    tts.playText(text, 'en-US-Neural2-C', getRate(speed));
+  }, [tts, getRate]);
 
   const stopPlaying = useCallback(() => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    setIsPlaying(false);
-  }, []);
+    tts.stop();
+  }, [tts]);
 
   const startRecording = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -201,16 +184,16 @@ export function useShadowing() {
   const reset = useCallback(() => {
     setTranscript('');
     setComparison(null);
-    stopPlaying();
+    tts.stop();
     if (recognitionRef.current) {
       recognitionRef.current.abort();
     }
     setIsRecording(false);
-  }, [stopPlaying]);
+  }, [tts]);
 
   return {
     // TTS
-    isPlaying,
+    isPlaying: tts.isPlaying || tts.isLoading,
     playSentence,
     stopPlaying,
     // STT
