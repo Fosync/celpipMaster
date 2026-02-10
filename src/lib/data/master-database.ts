@@ -195,7 +195,7 @@ export const grammarToCategories: Record<string, string[]> = {
 // ==========================================
 
 import { vocabularySets } from '@/lib/data/vocabulary';
-import { idiomSets } from '@/lib/data/idioms';
+import { allIdiomSets as idiomSets } from '@/lib/data/idioms';
 
 function buildVocabItems(): MasterItem[] {
   const items: MasterItem[] = [];

@@ -13,4 +13,11 @@ export interface WritingPrompt {
   scenario: string;
   instructions: string[];
   sampleResponse?: string;
+
+  // Enhanced fields for pre-writing support
+  usefulVocabulary: string[];     // Key vocabulary words for this task
+  usefulPatterns: string[];       // Sentence patterns/templates
+  usefulIdioms: string[];         // Relevant idioms
+  structureTemplate: string[];    // Paragraph structure guide
+  commonMistakes: string[];       // Common errors to avoid
 }

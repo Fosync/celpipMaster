@@ -1,8 +1,8 @@
-import { idiomSets } from '@/lib/data/idioms';
+import { allIdiomSets } from '@/lib/data/idioms';
 import { VocabSetGrid } from '@/components/learning/vocab-set-grid';
 
 export default function IdiomsPage() {
-  const setsData = idiomSets.map((set) => ({
+  const setsData = allIdiomSets.map((set) => ({
     id: set.id,
     title: set.title,
     description: set.description,
