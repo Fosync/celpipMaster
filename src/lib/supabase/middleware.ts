@@ -23,16 +23,29 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session token if exists
-  await supabase.auth.getUser();
+  // Refresh session token
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // TODO: Re-enable auth redirects when login/register is ready
-  // const { pathname } = request.nextUrl;
-  // const isAuthRoute = pathname.startsWith('/auth');
-  // const protectedPrefixes = ['/dashboard', '/learn', '/exam', '/speaking', '/profile'];
-  // const isProtectedRoute = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
-  // if (!user && isProtectedRoute) redirect to /auth/login
-  // if (user && isAuthRoute) redirect to /dashboard
+  const { pathname } = request.nextUrl;
+  const isAuthRoute = pathname.startsWith('/auth');
+  const protectedPrefixes = ['/dashboard', '/learn', '/exam', '/speaking', '/profile'];
+  const isProtectedRoute = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
+
+  // Redirect unauthenticated users away from protected routes
+  if (!user && isProtectedRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/login';
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users away from auth routes
+  if (user && isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }

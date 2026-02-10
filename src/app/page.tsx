@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 
 const features = [
   {
@@ -105,7 +106,11 @@ const plans = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -131,18 +136,29 @@ export default function Home() {
             </a>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              href="/auth/login"
-              className="hidden text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600 sm:block"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/auth/register"
-              className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30"
-            >
-              Get Started
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="hidden text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600 sm:block"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

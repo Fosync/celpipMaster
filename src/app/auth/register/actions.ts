@@ -24,7 +24,7 @@ export async function register(formData: FormData) {
     redirect('/auth/register?error=' + encodeURIComponent('Passwords do not match'));
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -38,6 +38,18 @@ export async function register(formData: FormData) {
     redirect('/auth/register?error=' + encodeURIComponent(error.message));
   }
 
+  // If email confirmation is disabled, user is auto-confirmed and session exists.
+  // If confirmation is enabled but we still want auto-login for development:
+  if (!data.session) {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (signInError) {
+      redirect('/auth/login?message=' + encodeURIComponent('Account created! Please log in.'));
+    }
+  }
+
   revalidatePath('/', 'layout');
-  redirect('/auth/login?message=' + encodeURIComponent('Account created! Check your email to confirm, then log in.'));
+  redirect('/dashboard');
 }
