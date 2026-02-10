@@ -99,7 +99,7 @@ export interface EncounterDetails {
 // ─── Constants ───
 
 const MODULE_TOTALS: Record<ModuleName, number> = {
-  vocabulary: 155,
+  vocabulary: 400,
   grammar: 18,
   reading: 20,
   writing: 20,
