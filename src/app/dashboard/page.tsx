@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Profile } from '@/types';
 import { ContinueLearning } from '@/components/dashboard/continue-learning';
 import { ProgressWidgets } from '@/components/dashboard/progress-widgets';
+import { PlacementBanner } from '@/components/dashboard/placement-banner';
 
 const demoProfile: Profile = {
   id: 'demo',
@@ -80,6 +81,14 @@ const learnCards = [
     gradient: 'from-pink-500 to-rose-600',
     lightBg: 'bg-pink-50',
   },
+  {
+    title: 'Shadowing',
+    description: 'Improve pronunciation with shadowing exercises',
+    href: '/learn/shadowing',
+    icon: '🔁',
+    gradient: 'from-violet-500 to-purple-600',
+    lightBg: 'bg-violet-50',
+  },
 ];
 
 const examCards = [
@@ -144,6 +153,9 @@ export default async function DashboardPage() {
           Keep up the great work. Here&apos;s your progress today.
         </p>
       </div>
+
+      {/* Placement Test Banner */}
+      <PlacementBanner />
 
       {/* Stats row */}
       <div className="grid gap-4 sm:grid-cols-3">

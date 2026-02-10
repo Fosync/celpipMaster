@@ -103,7 +103,7 @@ const MODULE_TOTALS: Record<ModuleName, number> = {
   grammar: 18,
   reading: 20,
   writing: 20,
-  listening: 10,
+  listening: 18,
   patterns: 8,
   idioms: 6,
   shadowing: 18,

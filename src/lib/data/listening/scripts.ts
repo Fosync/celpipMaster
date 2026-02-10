@@ -1,6 +1,8 @@
 import type { ListeningScript } from './types';
+import { newListeningScriptsA } from './new-scripts-a';
+import { newListeningScriptsB } from './new-scripts-b';
 
-export const listeningScripts: ListeningScript[] = [
+const existingScripts: ListeningScript[] = [
   // ============================================================
   // CLB 5 — Script 1: Weather Forecast (Monologue)
   // ============================================================
@@ -1184,4 +1186,10 @@ export const listeningScripts: ListeningScript[] = [
       },
     ],
   },
+];
+
+export const listeningScripts: ListeningScript[] = [
+  ...existingScripts,
+  ...newListeningScriptsA,
+  ...newListeningScriptsB,
 ];

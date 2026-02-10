@@ -14,6 +14,12 @@ export interface ListeningQuestion {
   explanation: string;
 }
 
+export interface KeyVocabItem {
+  word: string;
+  definition: string;
+  turkish: string;
+}
+
 export interface ListeningScript {
   id: string;
   title: string;
@@ -24,4 +30,5 @@ export interface ListeningScript {
   timeLimit: number;         // seconds for answering
   segments: ListeningSegment[];
   questions: ListeningQuestion[];
+  keyVocabulary?: KeyVocabItem[];
 }
