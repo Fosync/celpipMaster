@@ -26,10 +26,10 @@ interface WritingEngineProps {
 }
 
 export function WritingEngine({ prompt, backHref }: WritingEngineProps) {
+  const [phase, setPhase] = useState<'prep' | 'write' | 'result'>('prep');
   const [text, setText] = useState('');
   const [timeLeft, setTimeLeft] = useState(prompt.timeLimit);
-  const [timerActive, setTimerActive] = useState(true);
-  const [submitted, setSubmitted] = useState(false);
+  const [timerActive, setTimerActive] = useState(false);
   const [showHelpers, setShowHelpers] = useState(false);
   const [activeHelper, setActiveHelper] = useState<'vocab' | 'patterns' | 'structure' | 'mistakes'>('structure');
   const [feedback, setFeedback] = useState<WritingFeedback | null>(null);
@@ -38,14 +38,14 @@ export function WritingEngine({ prompt, backHref }: WritingEngineProps) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Timer
+  // Timer — only runs during the write phase
   useEffect(() => {
-    if (!timerActive || submitted) return;
+    if (!timerActive || phase !== 'write') return;
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           setTimerActive(false);
-          setSubmitted(true);
+          setPhase('result');
           return 0;
         }
         return prev - 1;
@@ -54,7 +54,7 @@ export function WritingEngine({ prompt, backHref }: WritingEngineProps) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [timerActive, submitted]);
+  }, [timerActive, phase]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -66,7 +66,12 @@ export function WritingEngine({ prompt, backHref }: WritingEngineProps) {
 
   const handleSubmit = useCallback(() => {
     setTimerActive(false);
-    setSubmitted(true);
+    setPhase('result');
+  }, []);
+
+  const handleStartWriting = useCallback(() => {
+    setPhase('write');
+    setTimerActive(true);
   }, []);
 
   const fetchFeedback = useCallback(async () => {
@@ -108,8 +113,150 @@ export function WritingEngine({ prompt, backHref }: WritingEngineProps) {
   const scoreColor = (score: number) =>
     score >= 8 ? 'text-green-600' : score >= 6 ? 'text-blue-600' : score >= 4 ? 'text-yellow-600' : 'text-red-600';
 
-  // Result screen
-  if (submitted) {
+  // ─── PREPARATION SCREEN ───
+  if (phase === 'prep') {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-4">
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </Link>
+        </div>
+
+        {/* Header */}
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-3 text-5xl">{prompt.icon}</div>
+          <h1 className="text-2xl font-bold text-gray-900">{prompt.title}</h1>
+          <p className="mt-1 text-sm text-gray-500">{prompt.description}</p>
+          <div className="mt-3 flex justify-center gap-3">
+            <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-600">
+              {prompt.taskType === 'email' ? 'Task 1: Email' : 'Task 2: Survey Response'}
+            </span>
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
+              CLB {prompt.clbLevel}
+            </span>
+            <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+              {Math.floor(prompt.timeLimit / 60)} min
+            </span>
+          </div>
+        </div>
+
+        {/* Scenario */}
+        <div className="mb-5 rounded-xl border border-gray-200 bg-white p-4">
+          <h3 className="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Scenario</h3>
+          <p className="text-sm leading-relaxed text-gray-700">{prompt.scenario}</p>
+        </div>
+
+        {/* Structure Guide */}
+        <div className="mb-4 rounded-xl border border-purple-200 bg-purple-50 p-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-purple-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            Structure Guide
+          </h3>
+          <div className="space-y-2">
+            {prompt.structureTemplate.map((step, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-purple-800">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-200 text-xs font-bold text-purple-700">
+                  {i + 1}
+                </span>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Useful Vocabulary */}
+        <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-blue-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Useful Vocabulary
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {prompt.usefulVocabulary.map((w, i) => (
+              <span key={i} className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                {w}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Useful Patterns */}
+        <div className="mb-4 rounded-xl border border-green-200 bg-green-50 p-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-green-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            Useful Patterns
+          </h3>
+          <ul className="space-y-1.5">
+            {prompt.usefulPatterns.map((p, i) => (
+              <li key={i} className="rounded-lg bg-green-100/50 px-3 py-2 text-xs text-green-800 italic">
+                &ldquo;{p}&rdquo;
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Useful Idioms */}
+        {prompt.usefulIdioms.length > 0 && (
+          <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-orange-700">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Useful Idioms
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {prompt.usefulIdioms.map((idiom, i) => (
+                <span key={i} className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700">
+                  {idiom}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Common Mistakes */}
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-red-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Common Mistakes to Avoid
+          </h3>
+          <ul className="space-y-1.5">
+            {prompt.commonMistakes.map((m, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-red-700">
+                <span className="mt-0.5 shrink-0 text-red-400">&#x26A0;</span>
+                {m}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Start Writing Button */}
+        <button
+          onClick={handleStartWriting}
+          className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl"
+        >
+          Start Writing
+        </button>
+      </div>
+    );
+  }
+
+  // ─── RESULT SCREEN ───
+  if (phase === 'result') {
     const timeUsed = prompt.timeLimit - timeLeft;
     const withinRange = wordCount >= prompt.minWords && wordCount <= prompt.maxWords;
 
