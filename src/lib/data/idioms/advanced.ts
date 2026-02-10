@@ -102,7 +102,7 @@ export const idiomSetsGroup2: IdiomSet[] = [
           }
         ],
         collocations: ['give someone the cold shoulder', 'get the cold shoulder', 'cold shoulder treatment'],
-        similarIdioms: ['stabbed-in-the-back'],
+        similarIdioms: ['on-thin-ice'],
         oppositeIdioms: ['hit-it-off']
       },
       {
@@ -151,7 +151,7 @@ export const idiomSetsGroup2: IdiomSet[] = [
         ],
         collocations: ['time to bury the hatchet', 'decided to bury the hatchet', 'bury the hatchet and move on'],
         similarIdioms: ['turn-over-a-new-leaf'],
-        oppositeIdioms: ['stabbed-in-the-back']
+        oppositeIdioms: ['give-the-cold-shoulder']
       },
       {
         id: 'bend-over-backwards',
@@ -198,56 +198,56 @@ export const idiomSetsGroup2: IdiomSet[] = [
           }
         ],
         collocations: ['bend over backwards to help', 'bend over backwards to please', 'bend over backwards for someone'],
-        similarIdioms: ['go-the-extra-mile', 'have-a-heart-of-gold'],
+        similarIdioms: ['go-the-extra-mile', 'thick-as-thieves'],
         oppositeIdioms: ['give-the-cold-shoulder']
       },
       {
-        id: 'stabbed-in-the-back',
-        idiom: 'Stabbed in the back',
-        meaning: 'To be betrayed by someone you trusted; to be deceived by a supposed friend or ally',
-        example: 'I felt stabbed in the back when I discovered my colleague had been taking credit for my work.',
-        turkishMeaning: 'Arkadan bicaklanmak, guvendigi biri tarafindan ihanete ugramak',
+        id: 'thick-as-thieves',
+        idiom: 'Thick as thieves',
+        meaning: 'Very close friends who share secrets and spend a lot of time together; having a very strong and loyal bond',
+        example: 'Those two have been thick as thieves since kindergarten — they do everything together.',
+        turkishMeaning: 'Can cigar, birbirine cok yakin, et ve tirnak gibi',
         clbLevel: 7,
         category: 'Relationships',
-        whenToUse: 'Use this idiom when someone you trusted has betrayed you, especially in a sneaky or unexpected way. It carries a strong emotional connotation of hurt and surprise.',
+        whenToUse: 'Use this idiom to describe two or more people who are extremely close and loyal to each other. It emphasizes a deep bond and mutual trust, often implying they share secrets and are inseparable.',
         contexts: [
           {
-            scenario: 'After sharing her business idea with her best friend, Karen felt stabbed in the back when she discovered her friend had launched the exact same product under a different name. Karen had trusted her completely and never expected this betrayal.',
-            question: 'What does "stabbed in the back" mean here?',
+            scenario: 'Emma and Sophie have been thick as thieves since they were five years old. They went to the same schools, chose the same university, and even ended up working at the same company. Their families joke that they are more like sisters than friends.',
+            question: 'What does "thick as thieves" mean about Emma and Sophie?',
             options: [
-              'Karen was physically attacked',
-              'Karen was betrayed by someone she trusted',
-              'Karen had a back injury',
-              'Karen\'s friend accidentally copied her idea'
+              'They are criminals together',
+              'They are extremely close friends with a deep bond',
+              'They look very similar to each other',
+              'They steal things from each other'
             ],
             correctIndex: 1
           },
           {
-            scenario: 'The politician felt stabbed in the back when his own party members voted against his proposed legislation. He had spent months building support and believed he had their loyalty. The surprise vote was a devastating blow.',
-            question: 'Why did the politician feel "stabbed in the back"?',
+            scenario: 'The two boys next door are thick as thieves. Every afternoon they build forts in the backyard, trade comic books, and whisper secrets to each other. Their mothers have to call them three times before they come inside for dinner.',
+            question: 'What does "thick as thieves" describe about the boys?',
             options: [
-              'He was injured during a debate',
-              'His allies unexpectedly betrayed him',
-              'He lost a physical fight',
-              'He forgot to vote himself'
+              'They misbehave and cause trouble together',
+              'They share a very close and inseparable friendship',
+              'They are planning to steal something',
+              'They argue with each other constantly'
             ],
             correctIndex: 1
           },
           {
-            scenario: 'Tom told his supervisor about a safety concern at the factory in confidence. He felt stabbed in the back when his supervisor told the factory owner and identified Tom by name, leading to Tom being fired for "causing trouble."',
-            question: 'What happened to Tom?',
+            scenario: 'At the office, Maria and Chen are thick as thieves. They always have lunch together, support each other in meetings, and are the first to help when one of them is overwhelmed with work. Their colleagues admire their strong friendship.',
+            question: 'Why are Maria and Chen described as "thick as thieves"?',
             options: [
-              'He was promoted for his honesty',
-              'His supervisor kept his secret safe',
-              'He was betrayed by someone he confided in',
-              'He decided to quit voluntarily'
+              'They hide things from their boss',
+              'They have a deep and loyal friendship at work',
+              'They compete against each other secretly',
+              'They both started at the company on the same day'
             ],
-            correctIndex: 2
+            correctIndex: 1
           }
         ],
-        collocations: ['feel stabbed in the back', 'stabbed in the back by a friend', 'backstabbing behaviour'],
-        similarIdioms: ['give-the-cold-shoulder'],
-        oppositeIdioms: ['have-a-heart-of-gold']
+        collocations: ['thick as thieves', 'been thick as thieves since', 'those two are thick as thieves'],
+        similarIdioms: ['birds-of-a-feather', 'hit-it-off'],
+        oppositeIdioms: ['give-the-cold-shoulder', 'on-thin-ice']
       },
       {
         id: 'birds-of-a-feather',
@@ -390,7 +390,7 @@ export const idiomSetsGroup2: IdiomSet[] = [
           }
         ],
         collocations: ['go the extra mile for someone', 'willing to go the extra mile', 'always goes the extra mile'],
-        similarIdioms: ['bend-over-backwards', 'have-a-heart-of-gold'],
+        similarIdioms: ['bend-over-backwards', 'turn-over-a-new-leaf'],
         oppositeIdioms: ['fall-short']
       },
       {
@@ -442,52 +442,52 @@ export const idiomSetsGroup2: IdiomSet[] = [
         oppositeIdioms: ['hit-rock-bottom']
       },
       {
-        id: 'have-a-heart-of-gold',
-        idiom: 'Have a heart of gold',
-        meaning: 'To be a very kind, generous, and caring person',
-        example: 'My neighbour has a heart of gold — she always brings soup to anyone on the street who is feeling unwell.',
-        turkishMeaning: 'Altin kalpli olmak, cok iyi kalpli ve comert olmak',
+        id: 'on-thin-ice',
+        idiom: 'On thin ice',
+        meaning: 'In a risky or precarious situation where one more mistake could lead to serious consequences',
+        example: 'After arriving late three days in a row, Jake knew he was on thin ice with his manager.',
+        turkishMeaning: 'Ince buz uzerinde yurmek, tehlikeli bir durumda olmak, son sansini kullanmak',
         clbLevel: 7,
         category: 'Relationships',
-        whenToUse: 'Use this idiom to describe someone who is genuinely kind and generous by nature. It is always a compliment and refers to a person\'s core character, not just occasional nice behaviour.',
+        whenToUse: 'Use this idiom to warn someone that they are close to getting into serious trouble, often because of repeated mistakes or bad behaviour. It implies that the situation is fragile and could break at any moment.',
         contexts: [
           {
-            scenario: 'Despite having very little money herself, Mrs. Chen always donates to local charities and volunteers at the food bank every weekend. Everyone in the community says she has a heart of gold. Her kindness has inspired many others to give back too.',
-            question: 'What does "heart of gold" tell us about Mrs. Chen?',
+            scenario: 'The employee had already received two written warnings for missing deadlines. His supervisor told him he was on thin ice and that one more late submission would result in termination. He started using a planner to stay organized.',
+            question: 'What does "on thin ice" mean for the employee?',
             options: [
-              'She wears gold jewelry',
-              'She has a medical heart condition',
-              'She is an exceptionally kind and generous person',
-              'She is very wealthy'
-            ],
-            correctIndex: 2
-          },
-          {
-            scenario: 'The school janitor, Mr. Wilson, has a heart of gold. He remembers every student\'s name, fixes their broken backpacks for free, and always has a kind word for anyone who seems sad. The students adore him and gave him a surprise party for his birthday.',
-            question: 'Why do the students like Mr. Wilson so much?',
-            options: [
-              'He lets them skip class',
-              'He is naturally kind and caring',
-              'He gives them money',
-              'He is very funny'
+              'He works in a very cold office',
+              'He is in a dangerous position where another mistake could get him fired',
+              'He is skating at a company winter event',
+              'He is being praised for his recent improvement'
             ],
             correctIndex: 1
           },
           {
-            scenario: 'My grandmother had a heart of gold. She would cook extra food every evening and bring it to elderly neighbours who lived alone. She never expected anything in return and would say that helping others was its own reward.',
-            question: 'What does "had a heart of gold" reveal about the grandmother?',
+            scenario: 'After breaking curfew twice, the teenager knew she was on thin ice with her parents. They warned her that if it happened again, she would lose her car privileges for the rest of the semester.',
+            question: 'Why is the teenager "on thin ice"?',
             options: [
-              'She collected gold coins',
-              'She was selfless and deeply caring',
-              'She was a professional chef',
-              'She had a lot of neighbours'
+              'She is in physical danger outdoors',
+              'She is close to facing serious consequences from her parents',
+              'She is walking on a frozen lake near her house',
+              'She has already been grounded permanently'
+            ],
+            correctIndex: 1
+          },
+          {
+            scenario: 'The soccer player was already on a yellow card, which meant he was on thin ice for the rest of the match. The coach warned him to play carefully because another foul would get him sent off and leave the team short-handed.',
+            question: 'What does "on thin ice" mean in this sports context?',
+            options: [
+              'The field was icy and slippery',
+              'He was one mistake away from a serious penalty',
+              'He was injured and should not be playing',
+              'He was the best player on the team'
             ],
             correctIndex: 1
           }
         ],
-        collocations: ['have a heart of gold', 'she\'s got a heart of gold', 'truly has a heart of gold'],
-        similarIdioms: ['go-the-extra-mile', 'bend-over-backwards'],
-        oppositeIdioms: ['stabbed-in-the-back']
+        collocations: ['on thin ice', 'skating on thin ice', 'treading on thin ice'],
+        similarIdioms: ['the-last-straw'],
+        oppositeIdioms: ['thick-as-thieves', 'hit-it-off']
       }
     ]
   },
