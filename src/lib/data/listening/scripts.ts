@@ -1,6 +1,8 @@
 import type { ListeningScript } from './types';
 import { newListeningScriptsA } from './new-scripts-a';
 import { newListeningScriptsB } from './new-scripts-b';
+import { newListeningScriptsC } from './new-scripts-c';
+import { newListeningScriptsD } from './new-scripts-d';
 
 const existingScripts: ListeningScript[] = [
   // ============================================================
@@ -1192,4 +1194,6 @@ export const listeningScripts: ListeningScript[] = [
   ...existingScripts,
   ...newListeningScriptsA,
   ...newListeningScriptsB,
+  ...newListeningScriptsC,
+  ...newListeningScriptsD,
 ];

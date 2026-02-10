@@ -1,6 +1,8 @@
 import type { ReadingPassage } from './types';
 import { newPassagesA } from './new-passages-a';
 import { newPassagesB } from './new-passages-b';
+import { newPassagesC } from './new-passages-c';
+import { newPassagesD } from './new-passages-d';
 
 const existingPassages: ReadingPassage[] = [
   // ============================================================
@@ -1083,4 +1085,6 @@ export const readingPassages: ReadingPassage[] = [
   ...existingPassages,
   ...newPassagesA,
   ...newPassagesB,
+  ...newPassagesC,
+  ...newPassagesD,
 ];

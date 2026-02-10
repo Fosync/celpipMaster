@@ -1,6 +1,7 @@
 import type { WritingPrompt } from './types';
+import { newWritingPrompts } from './new-prompts';
 
-export const writingPrompts: WritingPrompt[] = [
+const existingPrompts: WritingPrompt[] = [
   // ============================================
   // EMAIL TASKS (CELPIP Writing Task 1 style)
   // ============================================
@@ -1115,4 +1116,9 @@ export const writingPrompts: WritingPrompt[] = [
       'Ending without a constructive suggestion for balancing technology and social life.',
     ],
   },
+];
+
+export const writingPrompts: WritingPrompt[] = [
+  ...existingPrompts,
+  ...newWritingPrompts,
 ];
