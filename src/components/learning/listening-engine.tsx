@@ -1,12 +1,37 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import type { ListeningScript, ListeningSegment } from '@/lib/data/listening/types';
+import type { VocabWord } from '@/lib/data/vocabulary/types';
+import { highlightVocabInText } from '@/lib/utils/vocab-highlighter';
+import { WordPopup } from './word-popup';
 
 interface ListeningEngineProps {
   script: ListeningScript;
   backHref: string;
+  vocabWords?: VocabWord[];
+}
+
+function HighlightedText({ text, vocabWords }: { text: string; vocabWords: VocabWord[] }) {
+  const segments = useMemo(
+    () => highlightVocabInText(text, vocabWords),
+    [text, vocabWords]
+  );
+
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.vocabWord ? (
+          <WordPopup key={i} word={seg.vocabWord}>
+            {seg.text}
+          </WordPopup>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </>
+  );
 }
 
 type Phase = 'ready' | 'playing' | 'questions' | 'result';
@@ -15,7 +40,7 @@ interface VoiceMap {
   [speaker: string]: SpeechSynthesisVoice | null;
 }
 
-export function ListeningEngine({ script, backHref }: ListeningEngineProps) {
+export function ListeningEngine({ script, backHref, vocabWords = [] }: ListeningEngineProps) {
   const [phase, setPhase] = useState<Phase>('ready');
   const [currentSegment, setCurrentSegment] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -415,6 +440,43 @@ export function ListeningEngine({ script, backHref }: ListeningEngineProps) {
             );
           })}
         </div>
+
+        {/* Vocabulary found in listening */}
+        {vocabWords.length > 0 && (
+          <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <h3 className="mb-2 text-sm font-semibold text-blue-700">
+              Key Vocabulary ({vocabWords.length} words)
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {vocabWords.map((w) => (
+                <WordPopup key={w.id} word={w}>
+                  {w.word}
+                </WordPopup>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Transcript review with highlights */}
+        <details className="mt-4 rounded-xl border border-gray-200 bg-gray-50">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-600 hover:text-blue-600">
+            Show Full Transcript
+          </summary>
+          <div className="space-y-2 border-t border-gray-200 px-4 py-3">
+            {script.segments.map((seg, i) => (
+              <div key={i} className="text-sm">
+                <span className="font-medium text-gray-700">{seg.speaker}: </span>
+                <span className="text-gray-600">
+                  {vocabWords.length > 0 ? (
+                    <HighlightedText text={seg.text} vocabWords={vocabWords} />
+                  ) : (
+                    seg.text
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        </details>
 
         <div className="mt-6 flex gap-3">
           <Link

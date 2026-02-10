@@ -8,6 +8,12 @@ export interface ReadingQuestion {
 
 export type PassageType = 'correspondence' | 'diagram' | 'information' | 'opinion';
 
+export interface KeyVocabItem {
+  word: string;
+  definition: string;
+  turkish: string;
+}
+
 export interface ReadingPassage {
   id: string;
   title: string;
@@ -18,4 +24,5 @@ export interface ReadingPassage {
   timeLimit: number; // seconds
   passage: string;
   questions: ReadingQuestion[];
+  keyVocabulary: KeyVocabItem[];
 }

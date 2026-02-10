@@ -1,15 +1,73 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import type { ReadingPassage } from '@/lib/data/reading/types';
+import type { VocabWord } from '@/lib/data/vocabulary/types';
+import { highlightVocabInText } from '@/lib/utils/vocab-highlighter';
+import { WordPopup } from './word-popup';
 
 interface ReadingEngineProps {
   passage: ReadingPassage;
   backHref: string;
+  vocabWords?: VocabWord[];
 }
 
-export function ReadingEngine({ passage, backHref }: ReadingEngineProps) {
+function HighlightedText({ text, vocabWords }: { text: string; vocabWords: VocabWord[] }) {
+  const segments = useMemo(
+    () => highlightVocabInText(text, vocabWords),
+    [text, vocabWords]
+  );
+
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.vocabWord ? (
+          <WordPopup key={i} word={seg.vocabWord}>
+            {seg.text}
+          </WordPopup>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </>
+  );
+}
+
+/** Renders passage text, converting **word** markers to bold styled spans. */
+function PassageText({
+  text,
+  vocabWords,
+  showVocabHighlight,
+}: {
+  text: string;
+  vocabWords: VocabWord[];
+  showVocabHighlight: boolean;
+}) {
+  // Split on **word** markers
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          const word = part.slice(2, -2);
+          return (
+            <strong key={i} className="font-semibold text-blue-700">
+              {word}
+            </strong>
+          );
+        }
+        // For non-bold parts, apply vocab highlighting if enabled
+        if (showVocabHighlight && vocabWords.length > 0) {
+          return <HighlightedText key={i} text={part} vocabWords={vocabWords} />;
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
+export function ReadingEngine({ passage, backHref, vocabWords = [] }: ReadingEngineProps) {
   const [currentQuestion, setCurrentQuestion] = useState(-1); // -1 = reading phase
   const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
     new Array(passage.questions.length).fill(null)
@@ -17,6 +75,7 @@ export function ReadingEngine({ passage, backHref }: ReadingEngineProps) {
   const [showResult, setShowResult] = useState(false);
   const [timeLeft, setTimeLeft] = useState(passage.timeLimit);
   const [timerActive, setTimerActive] = useState(true);
+  const [showVocab, setShowVocab] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Timer
@@ -26,7 +85,6 @@ export function ReadingEngine({ passage, backHref }: ReadingEngineProps) {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           setTimerActive(false);
-          // Auto-submit when time runs out
           setShowResult(true);
           return 0;
         }
@@ -83,6 +141,8 @@ export function ReadingEngine({ passage, backHref }: ReadingEngineProps) {
   const timerColor =
     timeLeft > 60 ? 'text-green-600' : timeLeft > 30 ? 'text-yellow-600' : 'text-red-600';
 
+  const hasVocab = vocabWords.length > 0;
+
   // Result screen
   if (showResult) {
     return (
@@ -111,6 +171,26 @@ export function ReadingEngine({ passage, backHref }: ReadingEngineProps) {
             <div className="text-xs text-gray-400">Time Used</div>
           </div>
         </div>
+
+        {/* Vocabulary found in passage */}
+        {hasVocab && (
+          <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <h3 className="mb-2 text-sm font-semibold text-blue-700">
+              Vocabulary in this passage ({vocabWords.length} words)
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {vocabWords.map((w) => (
+                <span
+                  key={w.id}
+                  className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700"
+                  title={w.definition}
+                >
+                  {w.word}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Review answers */}
         <div className="space-y-4">
@@ -188,15 +268,56 @@ export function ReadingEngine({ passage, backHref }: ReadingEngineProps) {
 
         <div className="mb-4">
           <h1 className="text-xl font-bold text-gray-900">{passage.title}</h1>
-          <span className="mt-1 inline-block rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium capitalize text-purple-600">
-            {passage.passageType}
-          </span>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="inline-block rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium capitalize text-purple-600">
+              {passage.passageType}
+            </span>
+            {hasVocab && (
+              <button
+                onClick={() => setShowVocab(!showVocab)}
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                  showVocab
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600'
+                }`}
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                {showVocab ? 'Vocab On' : 'Vocab Off'}
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Key Vocabulary Panel */}
+        {passage.keyVocabulary && passage.keyVocabulary.length > 0 && (
+          <details className="mb-4 rounded-xl border border-blue-200 bg-blue-50" open>
+            <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-blue-700 hover:text-blue-800">
+              Key Vocabulary ({passage.keyVocabulary.length} words)
+            </summary>
+            <div className="border-t border-blue-200 px-4 py-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {passage.keyVocabulary.map((v) => (
+                  <div key={v.word} className="rounded-lg bg-white px-3 py-2">
+                    <span className="font-semibold text-blue-700">{v.word}</span>
+                    <span className="ml-1 text-xs text-gray-500">— {v.definition}</span>
+                    <div className="text-xs text-gray-400 italic">{v.turkish}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+        )}
 
         {/* Passage */}
         <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-6">
           <div className="whitespace-pre-line text-sm leading-relaxed text-gray-700">
-            {passage.passage}
+            <PassageText
+              text={passage.passage}
+              vocabWords={vocabWords}
+              showVocabHighlight={hasVocab && showVocab}
+            />
           </div>
         </div>
 
@@ -241,8 +362,12 @@ export function ReadingEngine({ passage, backHref }: ReadingEngineProps) {
         <summary className="cursor-pointer px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-600">
           Show passage
         </summary>
-        <div className="border-t border-gray-200 px-4 py-3 text-xs leading-relaxed text-gray-600">
-          {passage.passage}
+        <div className="border-t border-gray-200 px-4 py-3 text-xs leading-relaxed text-gray-600 whitespace-pre-line">
+          <PassageText
+            text={passage.passage}
+            vocabWords={vocabWords}
+            showVocabHighlight={hasVocab && showVocab}
+          />
         </div>
       </details>
 
