@@ -3,6 +3,7 @@ export interface ShadowingSentence {
   text: string;
   turkishMeaning: string;
   speed: 'slow' | 'normal' | 'fast';
+  speaker: 'ai' | 'user';
 }
 
 export interface ShadowingSet {
@@ -12,5 +13,6 @@ export interface ShadowingSet {
   clbLevel: number;
   category: string;
   icon: string;
+  context: string;
   sentences: ShadowingSentence[];
 }

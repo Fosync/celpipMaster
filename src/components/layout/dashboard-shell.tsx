@@ -21,6 +21,8 @@ import {
   ZapIcon,
   MenuIcon,
   XIcon,
+  SparklesIcon,
+  TrophyIcon,
 } from '@/components/ui/icons';
 import { Breadcrumbs } from './breadcrumbs';
 import { getModuleStats, type ModuleName } from '@/lib/progress/cross-tracker';
@@ -48,6 +50,7 @@ const navItems: {
   { label: 'Shadowing', href: '/learn/shadowing', icon: RepeatIcon, module: 'shadowing' },
   { label: 'Speaking', href: '/speaking', icon: MicIcon, module: 'speaking' },
   { label: 'Mock Exam', href: '/exam', icon: ClipboardListIcon },
+  { label: 'AI Coach', href: '/coach', icon: SparklesIcon },
   { label: 'Profile', href: '/profile', icon: UserIcon },
 ];
 

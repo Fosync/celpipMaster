@@ -1,29 +1,29 @@
 export type { ShadowingSentence, ShadowingSet } from './types';
 
 export {
-  greetingsSet,
-  shoppingSet,
+  coffeeShopSet,
+  shoppingReturnSet,
   directionsSet,
-  phoneSet,
-  restaurantSet,
+  phoneCallSet,
+  restaurantOrderSet,
   easySets,
 } from './clb4-5';
 
 export {
-  workSet,
-  healthSet,
-  housingSet,
-  travelSet,
-  educationSet,
+  workMeetingSet,
+  doctorVisitSet,
+  apartmentViewSet,
+  airportCheckinSet,
+  bankAccountSet,
   mediumSets,
 } from './clb5-6';
 
 export {
-  opinionsSet,
-  workplaceSet,
-  academicSet,
-  debateSet,
-  celpipModelsSet,
+  celpipTask1Set,
+  celpipTask2Set,
+  celpipTask5Set,
+  celpipTask7Set,
+  celpipTask8Set,
   hardSets,
 } from './clb6-8';
 
