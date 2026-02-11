@@ -62,6 +62,7 @@ interface ConfettiPiece {
   duration: number;
   color: string;
   size: number;
+  isRound: boolean;
 }
 
 function ConfettiAnimation() {
@@ -76,7 +77,9 @@ function ConfettiAnimation() {
       duration: 2 + Math.random() * 3,
       color: colors[Math.floor(Math.random() * colors.length)],
       size: 4 + Math.random() * 8,
+      isRound: Math.random() > 0.5,
     }));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time confetti animation
     setPieces(generated);
 
     const timer = setTimeout(() => setPieces([]), 5000);
@@ -96,7 +99,7 @@ function ConfettiAnimation() {
             width: `${piece.size}px`,
             height: `${piece.size}px`,
             backgroundColor: piece.color,
-            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            borderRadius: piece.isRound ? '50%' : '2px',
             animation: `confettiFall ${piece.duration}s ease-in ${piece.delay}s forwards`,
           }}
         />

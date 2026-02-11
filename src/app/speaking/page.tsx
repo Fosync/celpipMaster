@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { speakingTasks } from '@/lib/data/speaking';
 import TaskCard from '@/components/speaking/task-card';
+import MicTest from '@/components/speaking/mic-test';
 
 export default function SpeakingPage() {
   return (
@@ -86,6 +87,11 @@ export default function SpeakingPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Microphone Test */}
+      <div className="mb-6">
+        <MicTest />
       </div>
 
       {/* Task Grid */}

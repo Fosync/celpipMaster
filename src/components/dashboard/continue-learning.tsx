@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import type { MasteryStore } from '@/types/learning';
 
@@ -34,42 +34,41 @@ function formatSetId(id: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function ContinueLearning() {
-  const [recentSets, setRecentSets] = useState<RecentSet[]>([]);
+function loadRecentSets(): RecentSet[] {
+  try {
+    const raw = localStorage.getItem('celpipmaster_mastery');
+    if (!raw) return [];
+    const store: MasteryStore = JSON.parse(raw);
+    if (!store.sets) return [];
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('celpipmaster_mastery');
-      if (!raw) return;
-      const store: MasteryStore = JSON.parse(raw);
-      if (!store.sets) return;
-
-      const sets: RecentSet[] = [];
-      for (const [setId, result] of Object.entries(store.sets)) {
-        const info = getSetInfo(setId);
-        if (!info) continue;
-        sets.push({
-          setId,
-          title: info.title,
-          stars: result.stars,
-          bestScore: result.bestTestScore,
-          href: info.href,
-          icon: info.icon,
-        });
-      }
-
-      // Sort by most recent (completedAt), show up to 6
-      sets.sort((a, b) => {
-        const dateA = store.sets[a.setId]?.completedAt || '';
-        const dateB = store.sets[b.setId]?.completedAt || '';
-        return dateB.localeCompare(dateA);
+    const sets: RecentSet[] = [];
+    for (const [setId, result] of Object.entries(store.sets)) {
+      const info = getSetInfo(setId);
+      if (!info) continue;
+      sets.push({
+        setId,
+        title: info.title,
+        stars: result.stars,
+        bestScore: result.bestTestScore,
+        href: info.href,
+        icon: info.icon,
       });
-
-      setRecentSets(sets.slice(0, 6));
-    } catch {
-      // Ignore localStorage errors
     }
-  }, []);
+
+    sets.sort((a, b) => {
+      const dateA = store.sets[a.setId]?.completedAt || '';
+      const dateB = store.sets[b.setId]?.completedAt || '';
+      return dateB.localeCompare(dateA);
+    });
+
+    return sets.slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
+export function ContinueLearning() {
+  const [recentSets] = useState<RecentSet[]>(() => loadRecentSets());
 
   if (recentSets.length === 0) return null;
 

@@ -282,11 +282,17 @@ export function ProgressWidgets() {
   }>({ total: 0, byLevel: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 } });
 
   useEffect(() => {
-    setModuleStats(getModuleStats());
-    setWeakWords(getWeakWords());
-    setReviewWords(getTodayReview());
-    setActivities(getRecentActivities(5));
-    setVocabSummary(getVocabSummary());
+    const stats = getModuleStats();
+    const weak = getWeakWords();
+    const review = getTodayReview();
+    const acts = getRecentActivities(5);
+    const vocab = getVocabSummary();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from localStorage after mount
+    setModuleStats(stats);
+    setWeakWords(weak);
+    setReviewWords(review);
+    setActivities(acts);
+    setVocabSummary(vocab);
   }, []);
 
   return (

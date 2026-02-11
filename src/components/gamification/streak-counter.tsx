@@ -1,16 +1,12 @@
 'use client';
 import { getGameStats } from '@/lib/progress/gamification';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export function StreakCounter({ compact = false }: { compact?: boolean }) {
-  const [streak, setStreak] = useState(0);
-  const [longest, setLongest] = useState(0);
-
-  useEffect(() => {
+  const [{ streak, longest }] = useState(() => {
     const stats = getGameStats();
-    setStreak(stats.streakDays);
-    setLongest(stats.longestStreak);
-  }, []);
+    return { streak: stats.streakDays, longest: stats.longestStreak };
+  });
 
   if (compact) {
     return (

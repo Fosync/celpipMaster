@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { LevelBadge } from '@/components/placement/level-badge';
 
@@ -14,23 +14,18 @@ interface PlacementData {
   date: string;
 }
 
+function loadPlacementData(): PlacementData | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as PlacementData;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 export function PlacementBanner() {
-  const [data, setData] = useState<PlacementData | null>(null);
-  const [hasChecked, setHasChecked] = useState(false);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        setData(JSON.parse(raw) as PlacementData);
-      }
-    } catch {
-      // ignore
-    }
-    setHasChecked(true);
-  }, []);
-
-  if (!hasChecked) return null;
+  const [data] = useState<PlacementData | null>(() => loadPlacementData());
 
   // No placement test taken yet — show CTA
   if (!data) {

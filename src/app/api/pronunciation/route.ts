@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       );
 
       let wordScores: { word: string; accuracyScore: number; errorType: string }[] = [];
-      let phonemeErrors: { phoneme: string; actual: string; expected: string; word: string }[] = [];
+      const phonemeErrors: { phoneme: string; actual: string; expected: string; word: string }[] = [];
 
       try {
         const detail = JSON.parse(detailJson);

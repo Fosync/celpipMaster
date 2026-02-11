@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import type { LearningItem, QuestionType, QueueEntry } from '@/types/learning';
 import { shuffleArray } from '@/lib/utils/question-helpers';
 import { QuestionEnglishToTurkish } from '../questions/question-english-to-turkish';

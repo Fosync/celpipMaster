@@ -1,6 +1,6 @@
 'use client';
 import { getLevelInfo, type LevelInfo } from '@/lib/progress/gamification';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const LEVEL_COLORS: Record<number, string> = {
   1: 'from-gray-400 to-gray-500',
@@ -13,8 +13,7 @@ const LEVEL_COLORS: Record<number, string> = {
 };
 
 export function LevelBadge({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const [level, setLevel] = useState<LevelInfo | null>(null);
-  useEffect(() => { setLevel(getLevelInfo()); }, []);
+  const [level] = useState<LevelInfo | null>(() => getLevelInfo());
   if (!level) return null;
 
   const sizes = {

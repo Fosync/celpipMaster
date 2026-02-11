@@ -15,6 +15,7 @@ export function QuestionShell({ options, correctAnswer, onAnswer, children }: Qu
 
   // Reset state when options change (new question)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting on prop change
     setSelected(null);
     setFlashFeedback(null);
   }, [options, correctAnswer]);

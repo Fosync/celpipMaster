@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Profile } from '@/types';
@@ -22,7 +23,6 @@ import {
   MenuIcon,
   XIcon,
   SparklesIcon,
-  TrophyIcon,
 } from '@/components/ui/icons';
 import { Breadcrumbs } from './breadcrumbs';
 import { getModuleStats, type ModuleName } from '@/lib/progress/cross-tracker';
@@ -65,6 +65,7 @@ export function DashboardShell({ profile, userEmail, children }: DashboardShellP
     for (const s of stats) {
       map[s.module] = s.percentage;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- recomputing progress on navigation
     setModuleProgress(map);
   }, [pathname]);
 
@@ -200,9 +201,11 @@ export function DashboardShell({ profile, userEmail, children }: DashboardShellP
             {/* Profile avatar */}
             <div className="flex items-center gap-2">
               {profile?.avatar_url ? (
-                <img
+                <Image
                   src={profile.avatar_url}
                   alt={displayName}
+                  width={32}
+                  height={32}
                   className="h-8 w-8 rounded-full object-cover"
                 />
               ) : (

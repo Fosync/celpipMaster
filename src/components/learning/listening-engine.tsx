@@ -104,7 +104,7 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
 
     setIsPlaying(false);
     setPlayCount((c) => c + 1);
-  }, [script.segments, speakSegment]);
+  }, [script.segments, speakSegment, tts]);
 
   const handleStart = useCallback(() => {
     setPhase('playing');
@@ -121,7 +121,7 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
     setIsPlaying(false);
     setPhase('questions');
     setTimerActive(true);
-  }, []);
+  }, [tts]);
 
   const handleSelectAnswer = useCallback(
     (questionIdx: number, optionIdx: number) => {

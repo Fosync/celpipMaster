@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { conversationScenarios, freeChat } from '@/lib/data/speaking';
-import type { ConversationScenario } from '@/lib/data/speaking';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useConversation } from '@/hooks/use-conversation';
+import { useGoogleTTS } from '@/hooks/use-google-tts';
 import ConversationView from '@/components/speaking/practice/conversation-view';
 import ConversationSummary from '@/components/speaking/practice/conversation-summary';
 import EndConversationButton from '@/components/speaking/practice/end-conversation-button';
@@ -16,47 +16,20 @@ export default function ConversationPage() {
   const params = useParams();
   const scenarioId = params.scenarioId as string;
 
-  const [scenario, setScenario] = useState<ConversationScenario | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const scenario = scenarioId === 'free-chat'
+    ? freeChat
+    : conversationScenarios.find((s) => s.id === scenarioId) ?? null;
 
-  // Find scenario
-  useEffect(() => {
-    if (scenarioId === 'free-chat') {
-      setScenario(freeChat);
-    } else {
-      const found = conversationScenarios.find((s) => s.id === scenarioId);
-      if (found) setScenario(found);
-    }
-  }, [scenarioId]);
+  const [showSummary, setShowSummary] = useState(false);
+
+  // Google TTS for high-quality AI voice
+  const tts = useGoogleTTS();
+  const isSpeaking = tts.isPlaying || tts.isLoading;
 
   // TTS function
   const speak = useCallback((text: string) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-
-    // Try to find a good English voice
-    const voices = window.speechSynthesis.getVoices();
-    const englishVoice = voices.find(
-      (v) =>
-        v.lang.startsWith('en') &&
-        (v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'))
-    ) || voices.find((v) => v.lang.startsWith('en-'));
-    if (englishVoice) utterance.voice = englishVoice;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
-  }, []);
+    tts.playText(text, 'en-US-Neural2-C', 0.9);
+  }, [tts]);
 
   // Conversation hook
   const conversation = useConversation({
@@ -90,34 +63,27 @@ export default function ConversationPage() {
       speechRecognition.reset();
     } else {
       // Stop TTS if playing
-      if (typeof window !== 'undefined') {
-        window.speechSynthesis.cancel();
-        setIsSpeaking(false);
-      }
+      tts.stop();
       // Start recording
       speechRecognition.start();
     }
-  }, [speechRecognition, conversation]);
+  }, [speechRecognition, conversation, tts]);
 
   // Handle end conversation
   const handleEnd = useCallback(() => {
     speechRecognition.stop();
     speechRecognition.reset();
-    if (typeof window !== 'undefined') {
-      window.speechSynthesis.cancel();
-    }
+    tts.stop();
     conversation.endConversation();
-  }, [speechRecognition, conversation]);
+  }, [speechRecognition, conversation, tts]);
 
   // Handle try again
   const handleTryAgain = useCallback(() => {
     setShowSummary(false);
     speechRecognition.reset();
-    if (typeof window !== 'undefined') {
-      window.speechSynthesis.cancel();
-    }
+    tts.stop();
     conversation.reset();
-  }, [speechRecognition, conversation]);
+  }, [speechRecognition, conversation, tts]);
 
   // Speak message handler for chat bubbles
   const handleSpeakMessage = useCallback(
@@ -151,7 +117,7 @@ export default function ConversationPage() {
           newVocabulary={conversation.allVocabulary}
           scenarioTitle={scenario.title}
           onTryAgain={handleTryAgain}
-          onBackToScenarios={() => {}}
+          onBackToScenarios={() => window.location.assign('/speaking/practice')}
         />
       </div>
     );

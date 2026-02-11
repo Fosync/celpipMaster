@@ -79,6 +79,7 @@ export function ShadowPlayer({ set, backHref }: ShadowPlayerProps) {
     if (!isAiSpeaker) return;
     if (aiAutoPlaying) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- triggering auto-play on sentence change
     setAiAutoPlaying(true);
     playSentence(sentence.text, sentence.speed);
   }, [phase, current, isAiSpeaker, aiAutoPlaying, playSentence, sentence]);
@@ -109,6 +110,7 @@ export function ShadowPlayer({ set, backHref }: ShadowPlayerProps) {
   useEffect(() => {
     if (transcript && userStep === 'record' && !isRecording) {
       compare(sentence.text);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- auto-advancing after recording ends
       setUserStep('compare');
     }
   }, [transcript, userStep, isRecording, compare, sentence?.text]);

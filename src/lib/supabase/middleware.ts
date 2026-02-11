@@ -30,7 +30,7 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthRoute = pathname.startsWith('/auth');
-  const protectedPrefixes = ['/dashboard', '/learn', '/exam', '/speaking', '/profile'];
+  const protectedPrefixes = ['/dashboard', '/learn', '/exam', '/speaking', '/profile', '/coach'];
   const isProtectedRoute = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
 
   // Redirect unauthenticated users away from protected routes

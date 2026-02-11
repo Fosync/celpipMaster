@@ -2,15 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { placementQuestions, type PlacementQuestion, type CLBRange } from '@/lib/data/placement/questions';
+import { placementQuestions, type PlacementQuestion } from '@/lib/data/placement/questions';
 import { TestQuestion } from '@/components/placement/test-question';
 import { ResultScreen } from '@/components/placement/result-screen';
 import { LevelBadge } from '@/components/placement/level-badge';
 
 // ─── Constants ───
 
-const TOTAL_QUESTIONS = 20;
-const QUESTIONS_PER_CATEGORY = 5;
 const TIME_LIMIT = 600; // 10 minutes in seconds
 const STORAGE_KEY = 'celpipmaster_placement';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import type { MasteryStore, WordMastery, SetResult, MasteryStatus } from '@/types/learning';
 
 const STORAGE_KEY = 'celpipmaster_mastery';
@@ -32,11 +32,8 @@ function today(): string {
 }
 
 export function useMastery() {
-  const [store, setStore] = useState<MasteryStore>(getEmptyStore);
+  const [store, setStore] = useState<MasteryStore>(() => loadStore());
 
-  useEffect(() => {
-    setStore(loadStore());
-  }, []);
 
   const persist = useCallback((next: MasteryStore) => {
     setStore(next);

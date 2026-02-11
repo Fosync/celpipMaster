@@ -40,19 +40,22 @@ export default function ProfilePage() {
     }
 
     loadProfile();
-    setModuleStats(getModuleStats());
-    setVocabSummary(getVocabSummary());
 
-    // Check placement test result from localStorage
+    // Read localStorage-based data after mount
+    const stats = getModuleStats();
+    const vocab = getVocabSummary();
+    let placement: { level: number; score: number } | null = null;
     try {
       const raw = localStorage.getItem('celpipmaster_placement_result');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setPlacementResult(parsed);
-      }
+      if (raw) placement = JSON.parse(raw);
     } catch {
       // ignore
     }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading from localStorage after mount
+    setModuleStats(stats);
+    setVocabSummary(vocab);
+    if (placement) setPlacementResult(placement);
   }, []);
 
   const handlePasswordChange = async () => {

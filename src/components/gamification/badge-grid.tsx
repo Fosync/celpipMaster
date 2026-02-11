@@ -1,17 +1,14 @@
 'use client';
 import { getGameStats, type Badge } from '@/lib/progress/gamification';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export function BadgeGrid() {
-  const [badges, setBadges] = useState<Badge[]>([]);
-
-  useEffect(() => {
+  const [badges] = useState<Badge[]>(() => {
     const stats = getGameStats();
-    setBadges(stats.badges);
-  }, []);
+    return stats.badges;
+  });
 
   const unlocked = badges.filter(b => b.unlockedAt);
-  const locked = badges.filter(b => !b.unlockedAt);
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-6">

@@ -31,7 +31,6 @@ export default function ChatBubble({
   role,
   text,
   onSpeak,
-  isLatest = false,
 }: ChatBubbleProps) {
   const bubbleRef = useRef<HTMLDivElement>(null);
 

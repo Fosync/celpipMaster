@@ -50,6 +50,12 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       setError(null);
       chunksRef.current = [];
 
+      // Check if mediaDevices is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Microphone access is not supported in this browser. Please use Chrome, Edge, or Safari.');
+      }
+
+      // Request microphone permission explicitly
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -104,8 +110,25 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
       }, 1000);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to access microphone';
+      let message = 'Failed to access microphone';
+
+      if (err instanceof Error) {
+        // Provide user-friendly error messages
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          message = 'Microphone access denied. Please allow microphone access in your browser settings and try again.';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          message = 'No microphone found. Please connect a microphone and try again.';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          message = 'Microphone is being used by another application. Please close other apps and try again.';
+        } else if (err.name === 'OverconstrainedError') {
+          message = 'Could not start microphone with the requested settings. Please try again.';
+        } else if (err.name === 'SecurityError') {
+          message = 'Microphone access blocked for security reasons. Please ensure you are using HTTPS.';
+        } else {
+          message = err.message || message;
+        }
+      }
+
       setError(message);
       cleanup();
     }

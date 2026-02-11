@@ -3,6 +3,7 @@ import { newPassagesA } from './new-passages-a';
 import { newPassagesB } from './new-passages-b';
 import { newPassagesC } from './new-passages-c';
 import { newPassagesD } from './new-passages-d';
+import { newPassagesE } from './new-passages-e';
 
 const existingPassages: ReadingPassage[] = [
   // ============================================================
@@ -1087,4 +1088,5 @@ export const readingPassages: ReadingPassage[] = [
   ...newPassagesB,
   ...newPassagesC,
   ...newPassagesD,
+  ...newPassagesE,
 ];

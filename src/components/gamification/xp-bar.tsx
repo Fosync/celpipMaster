@@ -1,10 +1,9 @@
 'use client';
 import { getLevelInfo, type LevelInfo } from '@/lib/progress/gamification';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export function XPBar() {
-  const [level, setLevel] = useState<LevelInfo | null>(null);
-  useEffect(() => { setLevel(getLevelInfo()); }, []);
+  const [level] = useState<LevelInfo | null>(() => getLevelInfo());
   if (!level) return null;
   
   return (

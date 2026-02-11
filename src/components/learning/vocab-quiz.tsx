@@ -133,7 +133,9 @@ export function VocabQuiz({ words, setTitle, clbLevel }: VocabQuizProps) {
 
   useEffect(() => {
     if (phase === 'quiz' && quizWords.length > 0 && currentIndex < quizWords.length) {
-      setOptions(generateOptions(quizWords[currentIndex], words));
+      const opts = generateOptions(quizWords[currentIndex], words);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from prop changes
+      setOptions(opts);
     }
   }, [currentIndex, phase, quizWords, words]);
 
