@@ -7,6 +7,7 @@ import type { VocabWord } from '@/lib/data/vocabulary/types';
 import { highlightVocabInText } from '@/lib/utils/vocab-highlighter';
 import { WordPopup } from './word-popup';
 import { useGoogleTTS, type TTSVoice } from '@/hooks/use-google-tts';
+import { useMastery } from '@/hooks/use-mastery';
 
 interface ListeningEngineProps {
   script: ListeningScript;
@@ -50,7 +51,9 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
   const [isPlaying, setIsPlaying] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef(false);
+  const savedRef = useRef(false);
   const tts = useGoogleTTS();
+  const mastery = useMastery();
 
   // Timer for question phase
   useEffect(() => {
@@ -77,34 +80,42 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
   };
 
   const speakSegment = useCallback(
-    async (segment: ListeningSegment): Promise<void> => {
+    (segment: ListeningSegment, onDone: () => void) => {
       const voice: TTSVoice = segment.voiceGender === 'female'
-        ? 'en-US-Neural2-C'
-        : 'en-US-Neural2-D';
-      await tts.playText(segment.text, voice, 0.95);
+        ? 'nova'
+        : 'onyx';
+      tts.playText(segment.text, voice, 0.95, onDone);
     },
-    [tts]
+    [tts.playText]
   );
 
-  const playAllSegments = useCallback(async () => {
+  const playAllSegments = useCallback(() => {
     tts.stop();
     abortRef.current = false;
     setIsPlaying(true);
     setCurrentSegment(0);
 
-    for (let i = 0; i < script.segments.length; i++) {
-      if (abortRef.current) break;
-      setCurrentSegment(i);
-      await speakSegment(script.segments[i]);
-      // Small pause between segments
-      if (!abortRef.current && i < script.segments.length - 1) {
-        await new Promise((r) => setTimeout(r, 400));
+    let i = 0;
+    const playNext = () => {
+      if (abortRef.current || i >= script.segments.length) {
+        setIsPlaying(false);
+        setPlayCount((c) => c + 1);
+        return;
       }
-    }
-
-    setIsPlaying(false);
-    setPlayCount((c) => c + 1);
-  }, [script.segments, speakSegment, tts]);
+      setCurrentSegment(i);
+      const segment = script.segments[i];
+      i++;
+      speakSegment(segment, () => {
+        if (!abortRef.current && i < script.segments.length) {
+          setTimeout(playNext, 400);
+        } else {
+          setIsPlaying(false);
+          setPlayCount((c) => c + 1);
+        }
+      });
+    };
+    playNext();
+  }, [script.segments, speakSegment, tts.stop]);
 
   const handleStart = useCallback(() => {
     setPhase('playing');
@@ -121,7 +132,7 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
     setIsPlaying(false);
     setPhase('questions');
     setTimerActive(true);
-  }, [tts]);
+  }, [tts.stop]);
 
   const handleSelectAnswer = useCallback(
     (questionIdx: number, optionIdx: number) => {
@@ -164,6 +175,15 @@ export function ListeningEngine({ script, backHref, vocabWords = [] }: Listening
     (a, i) => a === script.questions[i].correctIndex
   ).length;
   const score = Math.round((correctCount / script.questions.length) * 100);
+
+  // Save mastery result when quiz is complete (only once)
+  useEffect(() => {
+    if (phase === 'result' && !savedRef.current) {
+      savedRef.current = true;
+      const questionIds = script.questions.map((q) => q.id);
+      mastery.recordTestResult(script.id, score, questionIds);
+    }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const timerColor =
     timeLeft > 60 ? 'text-green-600' : timeLeft > 30 ? 'text-yellow-600' : 'text-red-600';

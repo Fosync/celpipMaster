@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useMastery } from '@/hooks/use-mastery';
+import { StarRating } from './common/star-rating';
 
 interface ScriptData {
   id: string;
@@ -25,7 +27,13 @@ const formatLabels: Record<string, string> = {
 };
 
 export function ListeningSetGrid({ scripts, backHref }: ListeningSetGridProps) {
+  const mastery = useMastery();
   const clbLevels = [...new Set(scripts.map((s) => s.clbLevel))].sort();
+
+  const completedCount = scripts.filter((s) => {
+    const result = mastery.getSetResult(s.id);
+    return result && (result.completedAt || result.stars > 0);
+  }).length;
 
   return (
     <>
@@ -42,6 +50,11 @@ export function ListeningSetGrid({ scripts, backHref }: ListeningSetGridProps) {
         <h1 className="text-3xl font-bold text-gray-900">Listening Practice</h1>
         <p className="mt-2 text-gray-500">
           Practice CELPIP-style listening comprehension. Listen to audio and answer questions within the time limit.
+          {completedCount > 0 && (
+            <span className="ml-2 font-medium text-green-600">
+              {completedCount}/{scripts.length} completed
+            </span>
+          )}
         </p>
       </div>
 
@@ -63,45 +76,63 @@ export function ListeningSetGrid({ scripts, backHref }: ListeningSetGridProps) {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              {levelScripts.map((s) => (
-                <Link
-                  key={s.id}
-                  href={`/learn/listening/${s.id}`}
-                  className="group flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-100/50"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 text-3xl">
-                      {s.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">
-                        {s.title}
-                      </h3>
-                      <p className="mt-0.5 text-sm text-gray-500">{s.description}</p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
-                          {s.questionCount} questions
-                        </span>
-                        <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-600">
-                          {Math.floor(s.timeLimit / 60)} min
-                        </span>
-                        <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium capitalize text-purple-600">
-                          {formatLabels[s.format] || s.format}
-                        </span>
+              {levelScripts.map((s) => {
+                const stars = mastery.getStarRating(s.id);
+                const result = mastery.getSetResult(s.id);
+                const bestScore = result?.bestTestScore ?? 0;
+
+                return (
+                  <Link
+                    key={s.id}
+                    href={`/learn/listening/${s.id}`}
+                    className="group flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-100/50"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 text-3xl">
+                        {s.icon}
                       </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">
+                            {s.title}
+                          </h3>
+                          {stars > 0 && <StarRating stars={stars} />}
+                        </div>
+                        <p className="mt-0.5 text-sm text-gray-500">{s.description}</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
+                            {s.questionCount} questions
+                          </span>
+                          <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-600">
+                            {Math.floor(s.timeLimit / 60)} min
+                          </span>
+                          <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium capitalize text-purple-600">
+                            {formatLabels[s.format] || s.format}
+                          </span>
+                          {bestScore > 0 && (
+                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              bestScore >= 80
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              Best: {bestScore}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <svg
+                        className="mt-1 h-5 w-5 shrink-0 text-gray-300 transition-colors group-hover:text-blue-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
                     </div>
-                    <svg
-                      className="mt-1 h-5 w-5 shrink-0 text-gray-300 transition-colors group-hover:text-blue-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         );

@@ -23,10 +23,16 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session token
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refresh session token — wrapped in try/catch to survive rate limits
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // Auth rate limited or unavailable — let the request through
+    // rather than crashing the entire page
+    return supabaseResponse;
+  }
 
   const { pathname } = request.nextUrl;
   const isAuthRoute = pathname.startsWith('/auth');

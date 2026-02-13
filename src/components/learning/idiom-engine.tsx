@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { IdiomWord } from '@/lib/data/idioms/types';
 import { useSpeech } from '@/hooks/use-speech';
 import { useMastery } from '@/hooks/use-mastery';
@@ -23,6 +23,13 @@ function IntroPhase({
 }) {
   const [index, setIndex] = useState(0);
   const current = idioms[index];
+
+  // Auto-speak idiom when card changes (like vocabulary learn phase)
+  useEffect(() => {
+    if (current) {
+      speak(current.idiom);
+    }
+  }, [index]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNext = () => {
     if (index < idioms.length - 1) {
@@ -94,13 +101,23 @@ function IntroPhase({
         {index + 1} / {idioms.length}
       </p>
 
-      {/* Next button */}
-      <button
-        onClick={handleNext}
-        className="w-full py-3.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all"
-      >
-        {index < idioms.length - 1 ? 'Next Idiom' : 'Start Context Practice'}
-      </button>
+      {/* Navigation buttons */}
+      <div className="flex gap-3">
+        {index > 0 && (
+          <button
+            onClick={() => setIndex(index - 1)}
+            className="flex-1 py-3.5 border border-gray-300 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-all"
+          >
+            Previous
+          </button>
+        )}
+        <button
+          onClick={handleNext}
+          className="flex-1 py-3.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all"
+        >
+          {index < idioms.length - 1 ? 'Next Idiom' : 'Start Context Practice'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -110,10 +127,12 @@ function ContextPhase({
   idioms,
   onComplete,
   onRecordAnswer,
+  onGoBack,
 }: {
   idioms: IdiomWord[];
   onComplete: () => void;
   onRecordAnswer: (idiomId: string, correct: boolean) => void;
+  onGoBack: () => void;
 }) {
   // Build queue: 1 context question per idiom (pick randomly from 3 contexts)
   const [questions] = useState(() => {
@@ -127,22 +146,29 @@ function ContextPhase({
   });
 
   const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
+  const [answers, setAnswers] = useState<(number | null)[]>(() =>
+    new Array(questions.length).fill(null)
+  );
+  const [showingResult, setShowingResult] = useState(false);
 
   const current = questions[index];
+  const currentAnswer = answers[index];
+  const isAnswered = currentAnswer !== null;
 
   const handleSelect = (optionIndex: number) => {
-    if (showResult) return;
-    setSelected(optionIndex);
-    setShowResult(true);
+    if (isAnswered || showingResult) return;
+    setShowingResult(true);
 
-    const correct = optionIndex === current.context.correctIndex;
-    onRecordAnswer(current.idiom.id, correct);
+    onRecordAnswer(current.idiom.id, optionIndex === current.context.correctIndex);
+
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[index] = optionIndex;
+      return next;
+    });
 
     setTimeout(() => {
-      setSelected(null);
-      setShowResult(false);
+      setShowingResult(false);
       if (index < questions.length - 1) {
         setIndex(index + 1);
       } else {
@@ -151,10 +177,21 @@ function ContextPhase({
     }, 1500);
   };
 
+  const handleBack = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+    } else {
+      onGoBack();
+    }
+  };
+
   if (!current) {
     onComplete();
     return null;
   }
+
+  const displayResult = showingResult || isAnswered;
+  const displaySelected = showingResult ? answers[index] : currentAnswer;
 
   return (
     <div className="space-y-4 px-4">
@@ -175,10 +212,10 @@ function ContextPhase({
       <div className="space-y-2">
         {current.context.options.map((option, i) => {
           let style = 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50';
-          if (showResult) {
+          if (displayResult) {
             if (i === current.context.correctIndex) {
               style = 'bg-green-50 border-green-400 ring-2 ring-green-200';
-            } else if (i === selected && i !== current.context.correctIndex) {
+            } else if (i === displaySelected && i !== current.context.correctIndex) {
               style = 'bg-red-50 border-red-400 ring-2 ring-red-200';
             } else {
               style = 'bg-gray-50 border-gray-200 opacity-50';
@@ -189,7 +226,7 @@ function ContextPhase({
             <button
               key={i}
               onClick={() => handleSelect(i)}
-              disabled={showResult}
+              disabled={displayResult}
               className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${style}`}
             >
               <span className="font-semibold text-gray-400 mr-2">
@@ -201,6 +238,26 @@ function ContextPhase({
         })}
       </div>
 
+      {/* Navigation for reviewed questions */}
+      {isAnswered && !showingResult && (
+        <div className="flex gap-3">
+          <button
+            onClick={handleBack}
+            className="flex-1 py-2.5 border border-gray-300 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-all text-sm"
+          >
+            Previous
+          </button>
+          {index < questions.length - 1 && (
+            <button
+              onClick={() => setIndex(index + 1)}
+              className="flex-1 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all text-sm"
+            >
+              Next
+            </button>
+          )}
+        </div>
+      )}
+
       <p className="text-center text-xs text-gray-400">
         {index + 1} / {questions.length}
       </p>
@@ -208,25 +265,26 @@ function ContextPhase({
   );
 }
 
-// Phase 3: Practice - Multiple choice questions (definition match, fill blank, Turkish match)
+// Phase 3: Practice - Multiple choice questions (definition match, Turkish match)
 function PracticePhase({
   idioms,
   allIdioms,
   onComplete,
   onRecordAnswer,
+  onGoBack,
 }: {
   idioms: IdiomWord[];
   allIdioms: IdiomWord[];
   onComplete: () => void;
   onRecordAnswer: (idiomId: string, correct: boolean) => void;
+  onGoBack: () => void;
 }) {
-  type QType = 'definition' | 'turkish' | 'fill-blank';
+  type QType = 'definition' | 'turkish';
 
   const [questions] = useState(() => {
     const qs: { idiom: IdiomWord; type: QType; options: string[]; correctIndex: number; prompt: string }[] = [];
 
     for (const idiom of idioms) {
-      // Question 1: Definition match
       const defDistractors = allIdioms
         .filter((i) => i.id !== idiom.id)
         .sort(() => Math.random() - 0.5)
@@ -244,7 +302,6 @@ function PracticePhase({
         prompt: `What does "${idiom.idiom}" mean?`,
       });
 
-      // Question 2: Turkish match
       const turkDistractors = allIdioms
         .filter((i) => i.id !== idiom.id)
         .sort(() => Math.random() - 0.5)
@@ -267,22 +324,29 @@ function PracticePhase({
   });
 
   const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
+  const [answers, setAnswers] = useState<(number | null)[]>(() =>
+    new Array(questions.length).fill(null)
+  );
+  const [showingResult, setShowingResult] = useState(false);
 
   const current = questions[index];
+  const currentAnswer = answers[index];
+  const isAnswered = currentAnswer !== null;
 
   const handleSelect = (optionIndex: number) => {
-    if (showResult) return;
-    setSelected(optionIndex);
-    setShowResult(true);
+    if (isAnswered || showingResult) return;
+    setShowingResult(true);
 
-    const correct = optionIndex === current.correctIndex;
-    onRecordAnswer(current.idiom.id, correct);
+    onRecordAnswer(current.idiom.id, optionIndex === current.correctIndex);
+
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[index] = optionIndex;
+      return next;
+    });
 
     setTimeout(() => {
-      setSelected(null);
-      setShowResult(false);
+      setShowingResult(false);
       if (index < questions.length - 1) {
         setIndex(index + 1);
       } else {
@@ -291,16 +355,23 @@ function PracticePhase({
     }, 1500);
   };
 
+  const handleBack = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+    } else {
+      onGoBack();
+    }
+  };
+
   if (!current) {
     onComplete();
     return null;
   }
 
-  const typeLabel = current.type === 'definition'
-    ? 'Meaning Match'
-    : current.type === 'turkish'
-    ? 'Turkce Eslestir'
-    : 'Fill in the Blank';
+  const displayResult = showingResult || isAnswered;
+  const displaySelected = showingResult ? answers[index] : currentAnswer;
+
+  const typeLabel = current.type === 'definition' ? 'Meaning Match' : 'Turkce Eslestir';
 
   return (
     <div className="space-y-4 px-4">
@@ -314,10 +385,10 @@ function PracticePhase({
       <div className="space-y-2">
         {current.options.map((option, i) => {
           let style = 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50';
-          if (showResult) {
+          if (displayResult) {
             if (i === current.correctIndex) {
               style = 'bg-green-50 border-green-400 ring-2 ring-green-200';
-            } else if (i === selected && i !== current.correctIndex) {
+            } else if (i === displaySelected && i !== current.correctIndex) {
               style = 'bg-red-50 border-red-400 ring-2 ring-red-200';
             } else {
               style = 'bg-gray-50 border-gray-200 opacity-50';
@@ -328,7 +399,7 @@ function PracticePhase({
             <button
               key={i}
               onClick={() => handleSelect(i)}
-              disabled={showResult}
+              disabled={displayResult}
               className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${style}`}
             >
               <span className="font-semibold text-gray-400 mr-2">
@@ -339,6 +410,26 @@ function PracticePhase({
           );
         })}
       </div>
+
+      {/* Navigation for reviewed questions */}
+      {isAnswered && !showingResult && (
+        <div className="flex gap-3">
+          <button
+            onClick={handleBack}
+            className="flex-1 py-2.5 border border-gray-300 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-all text-sm"
+          >
+            Previous
+          </button>
+          {index < questions.length - 1 && (
+            <button
+              onClick={() => setIndex(index + 1)}
+              className="flex-1 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all text-sm"
+            >
+              Next
+            </button>
+          )}
+        </div>
+      )}
 
       <p className="text-center text-xs text-gray-400">
         {index + 1} / {questions.length}
@@ -352,28 +443,51 @@ function ProductionPhase({
   idioms,
   onComplete,
   speak,
+  onGoBack,
 }: {
   idioms: IdiomWord[];
   onComplete: () => void;
   speak: (text: string) => void;
+  onGoBack: () => void;
 }) {
   const [index, setIndex] = useState(0);
-  const [userSentence, setUserSentence] = useState('');
-  const [showModel, setShowModel] = useState(false);
+  // Store sentences and completion state per idiom
+  const [sentences, setSentences] = useState<string[]>(() => new Array(idioms.length).fill(''));
+  const [completed, setCompleted] = useState<boolean[]>(() => new Array(idioms.length).fill(false));
 
   const current = idioms[index];
+  const userSentence = sentences[index];
+  const isCompleted = completed[index];
+
+  const updateSentence = (value: string) => {
+    setSentences((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
 
   const handleSubmit = () => {
-    setShowModel(true);
+    setCompleted((prev) => {
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
   };
 
   const handleNext = () => {
-    setUserSentence('');
-    setShowModel(false);
     if (index < idioms.length - 1) {
       setIndex(index + 1);
     } else {
       onComplete();
+    }
+  };
+
+  const handleBack = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+    } else {
+      onGoBack();
     }
   };
 
@@ -395,23 +509,33 @@ function ProductionPhase({
 
       <textarea
         value={userSentence}
-        onChange={(e) => setUserSentence(e.target.value)}
+        onChange={(e) => updateSentence(e.target.value)}
         placeholder={`Write a sentence using "${current.idiom}"...`}
         className="w-full h-24 px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-        disabled={showModel}
+        disabled={isCompleted}
       />
 
-      {!showModel && (
-        <button
-          onClick={handleSubmit}
-          disabled={userSentence.trim().length < 5}
-          className="w-full py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Check My Sentence
-        </button>
+      {!isCompleted && (
+        <div className="flex gap-3">
+          {index > 0 && (
+            <button
+              onClick={handleBack}
+              className="flex-1 py-3 border border-gray-300 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-all"
+            >
+              Previous
+            </button>
+          )}
+          <button
+            onClick={handleSubmit}
+            disabled={userSentence.trim().length < 5}
+            className="flex-1 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Check My Sentence
+          </button>
+        </div>
       )}
 
-      {showModel && (
+      {isCompleted && (
         <div className="space-y-3">
           {/* User's sentence */}
           <div className="bg-gray-50 rounded-xl p-4">
@@ -442,12 +566,20 @@ function ProductionPhase({
               : '⚠ Make sure to include the idiom in your sentence.'}
           </div>
 
-          <button
-            onClick={handleNext}
-            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all"
-          >
-            {index < idioms.length - 1 ? 'Next Idiom' : 'Start Final Test'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleBack}
+              className="flex-1 py-3 border border-gray-300 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-all"
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNext}
+              className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all"
+            >
+              {index < idioms.length - 1 ? 'Next Idiom' : 'Start Final Test'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -458,15 +590,17 @@ function ProductionPhase({
   );
 }
 
-// Phase 5: Test - Mixed questions, single attempt
+// Phase 5: Test - Mixed questions, single attempt, supports going back
 function TestPhase({
   idioms,
   allIdioms,
   onComplete,
+  onGoBack,
 }: {
   idioms: IdiomWord[];
   allIdioms: IdiomWord[];
   onComplete: (score: number) => void;
+  onGoBack: () => void;
 }) {
   const [questions] = useState(() => {
     return idioms.map((idiom) => {
@@ -489,35 +623,62 @@ function TestPhase({
   });
 
   const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [answers, setAnswers] = useState<(number | null)[]>(() =>
+    new Array(idioms.length).fill(null)
+  );
+  const [showingResult, setShowingResult] = useState(false);
 
   const current = questions[index];
+  const currentAnswer = answers[index];
+  const isAnswered = currentAnswer !== null;
 
   const handleSelect = (optionIndex: number) => {
-    if (showResult) return;
-    setSelected(optionIndex);
-    setShowResult(true);
+    if (isAnswered || showingResult) return;
+    setShowingResult(true);
 
-    if (optionIndex === current.correctIndex) {
-      setCorrectCount((c) => c + 1);
-    }
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[index] = optionIndex;
+      return next;
+    });
 
     setTimeout(() => {
-      setSelected(null);
-      setShowResult(false);
+      setShowingResult(false);
       if (index < questions.length - 1) {
         setIndex(index + 1);
       } else {
-        const finalCorrect = correctCount + (optionIndex === current.correctIndex ? 1 : 0);
-        const score = Math.round((finalCorrect / questions.length) * 100);
+        // Calculate final score
+        const finalAnswers = [...answers];
+        finalAnswers[index] = optionIndex;
+        let correctCount = 0;
+        for (let i = 0; i < finalAnswers.length; i++) {
+          if (finalAnswers[i] === questions[i].correctIndex) correctCount++;
+        }
+        const score = Math.round((correctCount / questions.length) * 100);
         onComplete(score);
       }
     }, 1500);
   };
 
+  const handleBack = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+    } else {
+      onGoBack();
+    }
+  };
+
+  const handleNext = () => {
+    if (index < questions.length - 1) {
+      setIndex(index + 1);
+    }
+  };
+
   if (!current) return null;
+
+  // Show result state: either actively answering (showingResult) or reviewing an answered question
+  const displayResult = showingResult || isAnswered;
+  const displaySelected = showingResult ? answers[index] : currentAnswer;
 
   return (
     <div className="space-y-4 px-4">
@@ -531,10 +692,10 @@ function TestPhase({
       <div className="space-y-2">
         {current.options.map((option, i) => {
           let style = 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50';
-          if (showResult) {
+          if (displayResult) {
             if (i === current.correctIndex) {
               style = 'bg-green-50 border-green-400 ring-2 ring-green-200';
-            } else if (i === selected && i !== current.correctIndex) {
+            } else if (i === displaySelected && i !== current.correctIndex) {
               style = 'bg-red-50 border-red-400 ring-2 ring-red-200';
             } else {
               style = 'bg-gray-50 border-gray-200 opacity-50';
@@ -545,7 +706,7 @@ function TestPhase({
             <button
               key={i}
               onClick={() => handleSelect(i)}
-              disabled={showResult}
+              disabled={displayResult}
               className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm ${style}`}
             >
               <span className="font-semibold text-gray-400 mr-2">
@@ -556,6 +717,26 @@ function TestPhase({
           );
         })}
       </div>
+
+      {/* Navigation for reviewed questions */}
+      {isAnswered && !showingResult && (
+        <div className="flex gap-3">
+          <button
+            onClick={handleBack}
+            className="flex-1 py-2.5 border border-gray-300 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-all text-sm"
+          >
+            Previous
+          </button>
+          {index < questions.length - 1 && (
+            <button
+              onClick={handleNext}
+              className="flex-1 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all text-sm"
+            >
+              Next
+            </button>
+          )}
+        </div>
+      )}
 
       <p className="text-center text-xs text-gray-400">
         {index + 1} / {questions.length}
@@ -593,6 +774,20 @@ export function IdiomEngine({ idioms, allIdioms, setId, setTitle, clbLevel, back
   const [testScore, setTestScore] = useState(0);
   const { speak } = useSpeech();
   const mastery = useMastery();
+
+  // Previous phase map for header back button
+  const prevPhaseMap: Partial<Record<Phase, Phase>> = {
+    context: 'intro',
+    practice: 'context',
+    production: 'practice',
+    test: 'production',
+  };
+
+  const handleHeaderBack = useCallback(() => {
+    if (prevPhaseMap[phase]) {
+      setPhase(prevPhaseMap[phase]!);
+    }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRecordAnswer = useCallback(
     (idiomId: string, correct: boolean) => {
@@ -648,6 +843,7 @@ export function IdiomEngine({ idioms, allIdioms, setId, setTitle, clbLevel, back
         currentIndex={Math.round(progressPercent)}
         totalCount={100}
         phaseLabel={phaseLabels[phase]}
+        onBack={phase !== 'intro' ? handleHeaderBack : undefined}
       />
 
       {phase === 'intro' && (
@@ -663,6 +859,7 @@ export function IdiomEngine({ idioms, allIdioms, setId, setTitle, clbLevel, back
           idioms={idioms}
           onComplete={() => setPhase('practice')}
           onRecordAnswer={handleRecordAnswer}
+          onGoBack={() => setPhase('intro')}
         />
       )}
 
@@ -672,6 +869,7 @@ export function IdiomEngine({ idioms, allIdioms, setId, setTitle, clbLevel, back
           allIdioms={allIdioms}
           onComplete={() => setPhase('production')}
           onRecordAnswer={handleRecordAnswer}
+          onGoBack={() => setPhase('context')}
         />
       )}
 
@@ -680,6 +878,7 @@ export function IdiomEngine({ idioms, allIdioms, setId, setTitle, clbLevel, back
           idioms={idioms}
           onComplete={() => setPhase('test')}
           speak={speak}
+          onGoBack={() => setPhase('practice')}
         />
       )}
 
@@ -688,6 +887,7 @@ export function IdiomEngine({ idioms, allIdioms, setId, setTitle, clbLevel, back
           idioms={idioms}
           allIdioms={allIdioms}
           onComplete={handleTestComplete}
+          onGoBack={() => setPhase('production')}
         />
       )}
     </div>

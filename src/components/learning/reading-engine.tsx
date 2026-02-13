@@ -6,6 +6,7 @@ import type { ReadingPassage } from '@/lib/data/reading/types';
 import type { VocabWord } from '@/lib/data/vocabulary/types';
 import { highlightVocabInText } from '@/lib/utils/vocab-highlighter';
 import { WordPopup } from './word-popup';
+import { useMastery } from '@/hooks/use-mastery';
 
 interface ReadingEngineProps {
   passage: ReadingPassage;
@@ -77,6 +78,8 @@ export function ReadingEngine({ passage, backHref, vocabWords = [] }: ReadingEng
   const [timerActive, setTimerActive] = useState(true);
   const [showVocab, setShowVocab] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mastery = useMastery();
+  const savedRef = useRef(false);
 
   // Timer
   useEffect(() => {
@@ -137,6 +140,15 @@ export function ReadingEngine({ passage, backHref, vocabWords = [] }: ReadingEng
     (a, i) => a === passage.questions[i].correctIndex
   ).length;
   const score = Math.round((correctCount / passage.questions.length) * 100);
+
+  // Save mastery result when quiz is complete (only once)
+  useEffect(() => {
+    if (showResult && !savedRef.current) {
+      savedRef.current = true;
+      const questionIds = passage.questions.map((q) => q.id);
+      mastery.recordTestResult(passage.id, score, questionIds);
+    }
+  }, [showResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const timerColor =
     timeLeft > 60 ? 'text-green-600' : timeLeft > 30 ? 'text-yellow-600' : 'text-red-600';

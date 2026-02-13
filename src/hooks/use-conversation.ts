@@ -59,8 +59,12 @@ export function useConversation(options: UseConversationOptions): UseConversatio
   const [allCorrections, setAllCorrections] = useState<{ original: string; corrected: string; tip: string }[]>([]);
   const [allVocabulary, setAllVocabulary] = useState<string[]>([]);
 
-  // Add opening message on mount
+  // Add opening message on mount only
   const hasInitialized = useRef(false);
+  const onSpeakRef = useRef(onSpeak);
+  onSpeakRef.current = onSpeak;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!hasInitialized.current && openingLine) {
       hasInitialized.current = true;
@@ -72,11 +76,11 @@ export function useConversation(options: UseConversationOptions): UseConversatio
       setMessages([aiMsg]);
 
       // Speak the opening line
-      if (onSpeak) {
-        setTimeout(() => onSpeak(openingLine), 500);
+      if (onSpeakRef.current) {
+        setTimeout(() => onSpeakRef.current?.(openingLine), 500);
       }
     }
-  }, [openingLine, onSpeak]);
+  }, [openingLine]);
 
   const sendMessage = useCallback(
     async (transcript: string) => {
@@ -155,8 +159,8 @@ export function useConversation(options: UseConversationOptions): UseConversatio
         setMessages((prev) => [...prev, aiMsg]);
 
         // Speak AI response
-        if (onSpeak) {
-          onSpeak(data.next_line);
+        if (onSpeakRef.current) {
+          onSpeakRef.current(data.next_line);
         }
 
         // Check if conversation should end
@@ -171,7 +175,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
         setIsLoading(false);
       }
     },
-    [isEnded, isLoading, turnNumber, messages, scenarioContext, maxTurns, onSpeak]
+    [isEnded, isLoading, turnNumber, messages, scenarioContext, maxTurns]
   );
 
   const endConversation = useCallback(() => {
@@ -199,11 +203,11 @@ export function useConversation(options: UseConversationOptions): UseConversatio
         text: openingLine,
       };
       setMessages([aiMsg]);
-      if (onSpeak) {
-        setTimeout(() => onSpeak(openingLine), 500);
+      if (onSpeakRef.current) {
+        setTimeout(() => onSpeakRef.current?.(openingLine), 500);
       }
     }, 100);
-  }, [openingLine, onSpeak]);
+  }, [openingLine]);
 
   return {
     messages,

@@ -2,19 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const GOOGLE_TTS_URL = 'https://texttospeech.googleapis.com/v1/text:synthesize';
 
-// Valid voice names for Google Cloud TTS
-const VALID_VOICES: Record<string, { name: string; ssmlGender: string }> = {
+// Map OpenAI-style voice names to Google Cloud TTS voices
+const VOICE_MAP: Record<string, { name: string; ssmlGender: string }> = {
+  'nova':    { name: 'en-US-Neural2-C', ssmlGender: 'FEMALE' },
+  'shimmer': { name: 'en-US-Neural2-C', ssmlGender: 'FEMALE' },
+  'alloy':   { name: 'en-US-Neural2-C', ssmlGender: 'FEMALE' },
+  'onyx':    { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
+  'echo':    { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
+  'fable':   { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
+  // Legacy Google voice names (backwards compat)
   'en-US-Neural2-C': { name: 'en-US-Neural2-C', ssmlGender: 'FEMALE' },
   'en-US-Neural2-D': { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
-  'en-US-Studio-O': { name: 'en-US-Studio-O', ssmlGender: 'FEMALE' },
-  'en-US-Studio-Q': { name: 'en-US-Studio-Q', ssmlGender: 'MALE' },
+  'en-US-Studio-O':  { name: 'en-US-Studio-O', ssmlGender: 'FEMALE' },
+  'en-US-Studio-Q':  { name: 'en-US-Studio-Q', ssmlGender: 'MALE' },
 };
 
-const DEFAULT_VOICE = 'en-US-Neural2-C';
+const DEFAULT_VOICE = { name: 'en-US-Neural2-C', ssmlGender: 'FEMALE' };
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         { error: 'TTS API key not configured' },
@@ -36,7 +43,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Limit text length to prevent abuse
     if (text.length > 5000) {
       return NextResponse.json(
         { error: 'Text too long (max 5000 characters)' },
@@ -44,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const voiceConfig = VALID_VOICES[voice ?? ''] ?? VALID_VOICES[DEFAULT_VOICE];
+    const voiceConfig = VOICE_MAP[voice ?? ''] ?? DEFAULT_VOICE;
     const speakingRate = Math.min(Math.max(speed ?? 1.0, 0.5), 2.0);
 
     const ttsResponse = await fetch(`${GOOGLE_TTS_URL}?key=${apiKey}`, {
@@ -68,7 +74,19 @@ export async function POST(request: NextRequest) {
 
     if (!ttsResponse.ok) {
       const errorData = await ttsResponse.json().catch(() => null);
-      console.error('Google TTS API error:', errorData);
+      console.error('Google TTS API error:', ttsResponse.status, errorData);
+
+      // Rate limited — tell client to back off
+      if (ttsResponse.status === 429) {
+        return NextResponse.json(
+          { error: 'Rate limited, try again later' },
+          {
+            status: 429,
+            headers: { 'Retry-After': '60' },
+          }
+        );
+      }
+
       return NextResponse.json(
         { error: 'TTS synthesis failed' },
         { status: 502 }
@@ -85,7 +103,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Decode base64 to binary
     const audioBuffer = Buffer.from(audioContent, 'base64');
 
     return new NextResponse(audioBuffer, {

@@ -118,12 +118,12 @@ export function useShadowing() {
   }, []);
 
   const playSentence = useCallback((text: string, speed: 'slow' | 'normal' | 'fast') => {
-    tts.playText(text, 'en-US-Neural2-C', getRate(speed));
-  }, [tts, getRate]);
+    tts.playText(text, 'nova', getRate(speed));
+  }, [tts.playText, getRate]);
 
   const stopPlaying = useCallback(() => {
     tts.stop();
-  }, [tts]);
+  }, [tts.stop]);
 
   const startRecording = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -189,7 +189,7 @@ export function useShadowing() {
       recognitionRef.current.abort();
     }
     setIsRecording(false);
-  }, [tts]);
+  }, [tts.stop]);
 
   return {
     // TTS

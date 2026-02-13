@@ -99,15 +99,15 @@ export interface EncounterDetails {
 // ─── Constants ───
 
 const MODULE_TOTALS: Record<ModuleName, number> = {
-  vocabulary: 400,
+  vocabulary: 35,
   grammar: 18,
-  reading: 20,
-  writing: 20,
-  listening: 18,
+  reading: 44,
+  writing: 30,
+  listening: 36,
   patterns: 8,
-  idioms: 6,
-  shadowing: 18,
-  speaking: 10,
+  idioms: 20,
+  shadowing: 15,
+  speaking: 8,
 };
 
 const MODULE_META: Record<ModuleName, { label: string; icon: string }> = {
@@ -349,12 +349,15 @@ export function getModuleStats(): ModuleStats[] {
     // Count completions from the existing mastery store (sets that have completedAt or stars > 0)
     let completed = store.moduleCompletions[mod]?.length ?? 0;
 
-    // For vocabulary, grammar, idioms, patterns — also count from mastery store sets
-    if (mod === 'vocabulary' || mod === 'grammar' || mod === 'idioms' || mod === 'patterns') {
+    // Also count from mastery store sets for modules that save there
+    if (['vocabulary', 'grammar', 'idioms', 'patterns', 'reading', 'listening', 'writing'].includes(mod)) {
       const prefix =
         mod === 'vocabulary' ? 'clb' :
         mod === 'grammar' ? 'grammar' :
         mod === 'idioms' ? 'idioms' :
+        mod === 'reading' ? 'reading' :
+        mod === 'listening' ? 'listening' :
+        mod === 'writing' ? 'writing' :
         'patterns';
 
       const masteryCompleted = Object.entries(sets).filter(

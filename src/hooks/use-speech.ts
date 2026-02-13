@@ -8,9 +8,9 @@ export function useSpeech() {
 
   const speak = useCallback(
     (text: string) => {
-      tts.playText(text, 'en-US-Neural2-C', 0.9);
+      tts.playText(text, 'nova', 0.9);
     },
-    [tts]
+    [tts.playText]
   );
 
   return { speak };

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import type { WritingPrompt } from '@/lib/data/writing/types';
+import { useMastery } from '@/hooks/use-mastery';
 
 interface WritingFeedback {
   scores: {
@@ -37,6 +38,8 @@ export function WritingEngine({ prompt, backHref }: WritingEngineProps) {
   const [feedbackError, setFeedbackError] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const savedRef = useRef(false);
+  const mastery = useMastery();
 
   // Timer — only runs during the write phase
   useEffect(() => {
@@ -67,7 +70,16 @@ export function WritingEngine({ prompt, backHref }: WritingEngineProps) {
   const handleSubmit = useCallback(() => {
     setTimerActive(false);
     setPhase('result');
-  }, []);
+
+    // Save mastery: score based on word count within range
+    if (!savedRef.current && text.trim()) {
+      savedRef.current = true;
+      const wc = text.trim().split(/\s+/).length;
+      const inRange = wc >= prompt.minWords && wc <= prompt.maxWords;
+      const completionScore = inRange ? 80 : wc >= prompt.minWords * 0.7 ? 60 : 40;
+      mastery.recordTestResult(prompt.id, completionScore, [prompt.id]);
+    }
+  }, [text, prompt, mastery]);
 
   const handleStartWriting = useCallback(() => {
     setPhase('write');
@@ -93,6 +105,10 @@ export function WritingEngine({ prompt, backHref }: WritingEngineProps) {
       if (!res.ok) throw new Error('Failed to get feedback');
       const data = await res.json();
       setFeedback(data);
+      // Update mastery with AI score (overall out of 10 → percentage)
+      if (data.scores?.overall) {
+        mastery.recordTestResult(prompt.id, data.scores.overall * 10, [prompt.id]);
+      }
     } catch {
       setFeedbackError('Could not get AI feedback. Please try again.');
     } finally {

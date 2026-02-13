@@ -60,13 +60,23 @@ export function DashboardShell({ profile, userEmail, children }: DashboardShellP
   const [moduleProgress, setModuleProgress] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const stats = getModuleStats();
-    const map: Record<string, number> = {};
-    for (const s of stats) {
-      map[s.module] = s.percentage;
+    // Defer progress calculation so it doesn't block navigation/rendering
+    const compute = () => {
+      const stats = getModuleStats();
+      const map: Record<string, number> = {};
+      for (const s of stats) {
+        map[s.module] = s.percentage;
+      }
+      setModuleProgress(map);
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = (window as unknown as { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(compute);
+      return () => (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
+    } else {
+      const id = setTimeout(compute, 0);
+      return () => clearTimeout(id);
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- recomputing progress on navigation
-    setModuleProgress(map);
   }, [pathname]);
 
   const displayName = profile?.full_name || userEmail.split('@')[0];

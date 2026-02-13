@@ -16,19 +16,21 @@ export function LearnPhase({ items, onComplete, onMarkSeen, speak }: LearnPhaseP
   const [showBack, setShowBack] = useState(false);
   const currentItem = items[currentIndex];
 
-  // Auto-speak word on change
+  // Auto-speak word on card change only (not on speak ref change)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentItem) {
       speak(currentItem.term);
     }
-  }, [currentIndex, currentItem, speak]);
+  }, [currentIndex]);
 
-  // Mark word as seen
+  // Mark word as seen on card change only
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentItem) {
       onMarkSeen(currentItem.id);
     }
-  }, [currentIndex, currentItem, onMarkSeen]);
+  }, [currentIndex]);
 
   const handleNext = () => {
     setShowBack(false);

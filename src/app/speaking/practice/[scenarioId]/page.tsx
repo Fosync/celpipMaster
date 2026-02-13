@@ -28,8 +28,8 @@ export default function ConversationPage() {
 
   // TTS function
   const speak = useCallback((text: string) => {
-    tts.playText(text, 'en-US-Neural2-C', 0.9);
-  }, [tts]);
+    tts.playText(text, 'nova', 0.9);
+  }, [tts.playText]);
 
   // Conversation hook
   const conversation = useConversation({
@@ -67,7 +67,7 @@ export default function ConversationPage() {
       // Start recording
       speechRecognition.start();
     }
-  }, [speechRecognition, conversation, tts]);
+  }, [speechRecognition, conversation, tts.stop]);
 
   // Handle end conversation
   const handleEnd = useCallback(() => {
@@ -75,7 +75,7 @@ export default function ConversationPage() {
     speechRecognition.reset();
     tts.stop();
     conversation.endConversation();
-  }, [speechRecognition, conversation, tts]);
+  }, [speechRecognition, conversation, tts.stop]);
 
   // Handle try again
   const handleTryAgain = useCallback(() => {
@@ -83,7 +83,7 @@ export default function ConversationPage() {
     speechRecognition.reset();
     tts.stop();
     conversation.reset();
-  }, [speechRecognition, conversation, tts]);
+  }, [speechRecognition, conversation, tts.stop]);
 
   // Speak message handler for chat bubbles
   const handleSpeakMessage = useCallback(

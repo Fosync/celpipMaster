@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useMastery } from '@/hooks/use-mastery';
+import { StarRating } from './common/star-rating';
 
 interface PromptData {
   id: string;
@@ -20,8 +22,14 @@ interface WritingSetGridProps {
 }
 
 export function WritingSetGrid({ prompts, backHref }: WritingSetGridProps) {
+  const mastery = useMastery();
   const emailPrompts = prompts.filter((p) => p.taskType === 'email');
   const surveyPrompts = prompts.filter((p) => p.taskType === 'survey');
+
+  const completedCount = prompts.filter((p) => {
+    const result = mastery.getSetResult(p.id);
+    return result && (result.completedAt || result.stars > 0);
+  }).length;
 
   const renderSection = (title: string, subtitle: string, items: PromptData[], gradient: string) => (
     <div className="mb-10">
@@ -38,45 +46,63 @@ export function WritingSetGrid({ prompts, backHref }: WritingSetGridProps) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {items.map((p) => (
-          <Link
-            key={p.id}
-            href={`/learn/writing/${p.id}`}
-            className="group flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-100/50"
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 text-3xl">
-                {p.icon}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 group-hover:text-amber-600">
-                  {p.title}
-                </h3>
-                <p className="mt-0.5 text-sm text-gray-500">{p.description}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-600">
-                    {p.minWords}-{p.maxWords} words
-                  </span>
-                  <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
-                    {Math.floor(p.timeLimit / 60)} min
-                  </span>
-                  <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-600">
-                    CLB {p.clbLevel}
-                  </span>
+        {items.map((p) => {
+          const stars = mastery.getStarRating(p.id);
+          const result = mastery.getSetResult(p.id);
+          const bestScore = result?.bestTestScore ?? 0;
+
+          return (
+            <Link
+              key={p.id}
+              href={`/learn/writing/${p.id}`}
+              className="group flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-100/50"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 text-3xl">
+                  {p.icon}
                 </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-900 group-hover:text-amber-600">
+                      {p.title}
+                    </h3>
+                    {stars > 0 && <StarRating stars={stars} />}
+                  </div>
+                  <p className="mt-0.5 text-sm text-gray-500">{p.description}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-600">
+                      {p.minWords}-{p.maxWords} words
+                    </span>
+                    <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
+                      {Math.floor(p.timeLimit / 60)} min
+                    </span>
+                    <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-600">
+                      CLB {p.clbLevel}
+                    </span>
+                    {bestScore > 0 && (
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        bestScore >= 80
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        Best: {bestScore}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <svg
+                  className="mt-1 h-5 w-5 shrink-0 text-gray-300 transition-colors group-hover:text-amber-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-              <svg
-                className="mt-1 h-5 w-5 shrink-0 text-gray-300 transition-colors group-hover:text-amber-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
@@ -96,6 +122,11 @@ export function WritingSetGrid({ prompts, backHref }: WritingSetGridProps) {
         <h1 className="text-3xl font-bold text-gray-900">Writing Practice</h1>
         <p className="mt-2 text-gray-500">
           Practice CELPIP writing tasks. Write emails and survey responses within the time limit.
+          {completedCount > 0 && (
+            <span className="ml-2 font-medium text-green-600">
+              {completedCount}/{prompts.length} completed
+            </span>
+          )}
         </p>
       </div>
 
