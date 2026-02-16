@@ -1,7 +1,7 @@
 'use client';
 
 import type { LearningItem } from '@/types/learning';
-import { generateOptionsFromItems } from '@/lib/utils/question-helpers';
+import { generateSmartDistractors } from '@/lib/utils/question-helpers';
 import { QuestionShell } from './question-shell';
 
 interface Props {
@@ -12,11 +12,17 @@ interface Props {
 }
 
 export function QuestionEnglishToTurkish({ item, allItems, onAnswer, speak }: Props) {
-  const options = generateOptionsFromItems(item, allItems, (i) => i.turkishMeaning);
+  const options = generateSmartDistractors(item, allItems, (i) => i.turkishMeaning, 3);
 
   return (
-    <QuestionShell options={options} correctAnswer={item.turkishMeaning} onAnswer={onAnswer}>
-      <p className="text-sm font-medium text-gray-400">What is the Turkish meaning?</p>
+    <QuestionShell
+      options={options}
+      correctAnswer={item.turkishMeaning}
+      correctWord={item.term}
+      turkishMeaning={item.turkishMeaning}
+      onAnswer={onAnswer}
+    >
+      <p className="text-sm font-medium text-gray-400">Bu kelimenin Turkcesi nedir?</p>
       <div className="mt-2 flex items-center justify-center gap-3">
         <h2 className="text-4xl font-bold text-gray-900">{item.term}</h2>
         <button

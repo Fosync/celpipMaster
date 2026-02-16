@@ -11,6 +11,7 @@ export type {
   SetResult,
   MasteryStore,
   QueueEntry,
+  QuizAnswer,
 } from './learning';
 
 // User Profile (matches public.profiles table)

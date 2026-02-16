@@ -1,7 +1,7 @@
 'use client';
 
 import type { LearningItem } from '@/types/learning';
-import { generateSmartDistractors } from '@/lib/utils/question-helpers';
+import { generateSmartDistractors, getEmojiForItem } from '@/lib/utils/question-helpers';
 import { QuestionShell } from './question-shell';
 
 interface Props {
@@ -10,8 +10,9 @@ interface Props {
   onAnswer: (correct: boolean) => void;
 }
 
-export function QuestionTurkishToEnglish({ item, allItems, onAnswer }: Props) {
+export function QuestionEmojiMatch({ item, allItems, onAnswer }: Props) {
   const options = generateSmartDistractors(item, allItems, (i) => i.term, 3);
+  const emoji = getEmojiForItem(item);
 
   return (
     <QuestionShell
@@ -20,11 +21,9 @@ export function QuestionTurkishToEnglish({ item, allItems, onAnswer }: Props) {
       turkishMeaning={item.turkishMeaning}
       onAnswer={onAnswer}
     >
-      <p className="text-sm font-medium text-gray-400">Bu kelimenin Ingilizcesi nedir?</p>
-      <h2 className="mt-3 text-3xl font-bold text-gray-900">{item.turkishMeaning}</h2>
-      <span className="mt-3 inline-block rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-600">
-        Turkce \u2192 English
-      </span>
+      <p className="text-sm font-medium text-gray-400">Bu emoji hangi kelimeyi temsil ediyor?</p>
+      <div className="mt-4 text-7xl">{emoji}</div>
+      <p className="mt-2 text-xs text-gray-400">{item.category}</p>
     </QuestionShell>
   );
 }

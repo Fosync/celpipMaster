@@ -1,41 +1,46 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { LearningItem, QuestionType, QueueEntry } from '@/types/learning';
+import type { LearningItem, QuestionType, QueueEntry, QuizAnswer } from '@/types/learning';
 import { shuffleArray } from '@/lib/utils/question-helpers';
-import { QuestionEnglishToTurkish } from '../questions/question-english-to-turkish';
 import { QuestionTurkishToEnglish } from '../questions/question-turkish-to-english';
-import { QuestionDefinitionMatch } from '../questions/question-definition-match';
+import { QuestionEnglishToTurkish } from '../questions/question-english-to-turkish';
+import { QuestionEmojiMatch } from '../questions/question-emoji-match';
 import { QuestionFillBlank } from '../questions/question-fill-blank';
-import { QuestionListenSpell } from '../questions/question-listen-spell';
+import { QuestionListenChoose } from '../questions/question-listen-choose';
+import { QuestionTyping } from '../questions/question-typing';
+import { QuestionSentenceBuild } from '../questions/question-sentence-build';
 
 interface TestPhaseProps {
   items: LearningItem[];
-  onPass: (score: number) => void;
-  onFail: (score: number, weakWordIds: string[]) => void;
+  onPass: (score: number, answers: QuizAnswer[]) => void;
+  onFail: (score: number, weakWordIds: string[], answers: QuizAnswer[]) => void;
   onRecordAnswer: (wordId: string, correct: boolean) => void;
   speak: (text: string) => void;
 }
 
 const ALL_TYPES: QuestionType[] = [
-  'english-to-turkish',
   'turkish-to-english',
-  'definition-match',
-  'fill-blank',
-  'listen-spell',
+  'english-to-turkish',
+  'fill-in-blank',
+  'listen-and-choose',
+  'typing',
+  'emoji-match',
+  'sentence-build',
 ];
 
 function buildTestQueue(items: LearningItem[]): QueueEntry[] {
-  return shuffleArray(items).map((item) => ({
+  const shuffled = shuffleArray(items);
+  return shuffled.map((item, idx) => ({
     item,
-    questionType: shuffleArray(ALL_TYPES)[0],
+    questionType: ALL_TYPES[idx % ALL_TYPES.length],
   }));
 }
 
 export function TestPhase({ items, onPass, onFail, onRecordAnswer, speak }: TestPhaseProps) {
   const [queue] = useState<QueueEntry[]>(() => buildTestQueue(items));
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [results, setResults] = useState<Record<string, boolean>>({});
+  const [answers, setAnswers] = useState<QuizAnswer[]>([]);
 
   const current = queue[currentIdx];
 
@@ -44,27 +49,35 @@ export function TestPhase({ items, onPass, onFail, onRecordAnswer, speak }: Test
       if (!current) return;
       onRecordAnswer(current.item.id, correct);
 
-      const newResults = { ...results, [current.item.id]: correct };
-      setResults(newResults);
+      const answer: QuizAnswer = {
+        wordId: current.item.id,
+        word: current.item.term,
+        correct,
+        correctAnswer: current.item.term,
+        turkishMeaning: current.item.turkishMeaning,
+        questionType: current.questionType,
+      };
+      const newAnswers = [...answers, answer];
+      setAnswers(newAnswers);
 
       if (currentIdx + 1 >= queue.length) {
         // Test complete
-        const correctCount = Object.values(newResults).filter(Boolean).length;
+        const correctCount = newAnswers.filter((a) => a.correct).length;
         const score = Math.round((correctCount / items.length) * 100);
-        const weakIds = Object.entries(newResults)
-          .filter(([, v]) => !v)
-          .map(([k]) => k);
+        const weakIds = newAnswers
+          .filter((a) => !a.correct)
+          .map((a) => a.wordId);
 
         if (score >= 80) {
-          onPass(score);
+          onPass(score, newAnswers);
         } else {
-          onFail(score, weakIds);
+          onFail(score, weakIds, newAnswers);
         }
       } else {
         setCurrentIdx(currentIdx + 1);
       }
     },
-    [current, currentIdx, queue, results, items.length, onPass, onFail, onRecordAnswer]
+    [current, currentIdx, queue, answers, items.length, onPass, onFail, onRecordAnswer]
   );
 
   if (!current) return null;
@@ -76,8 +89,6 @@ export function TestPhase({ items, onPass, onFail, onRecordAnswer, speak }: Test
     speak,
   };
 
-  const answeredCount = Object.keys(results).length;
-
   return (
     <div>
       {/* Test header */}
@@ -86,16 +97,18 @@ export function TestPhase({ items, onPass, onFail, onRecordAnswer, speak }: Test
           TEST
         </span>
         <span className="text-sm text-gray-500">
-          Question {answeredCount + 1} of {items.length}
+          Soru {answers.length + 1} / {items.length}
         </span>
       </div>
 
       {/* Render question by type */}
-      {current.questionType === 'english-to-turkish' && <QuestionEnglishToTurkish {...questionProps} />}
       {current.questionType === 'turkish-to-english' && <QuestionTurkishToEnglish {...questionProps} />}
-      {current.questionType === 'definition-match' && <QuestionDefinitionMatch {...questionProps} />}
-      {current.questionType === 'fill-blank' && <QuestionFillBlank {...questionProps} />}
-      {current.questionType === 'listen-spell' && <QuestionListenSpell {...questionProps} />}
+      {current.questionType === 'english-to-turkish' && <QuestionEnglishToTurkish {...questionProps} />}
+      {current.questionType === 'emoji-match' && <QuestionEmojiMatch {...questionProps} />}
+      {current.questionType === 'fill-in-blank' && <QuestionFillBlank {...questionProps} />}
+      {current.questionType === 'listen-and-choose' && <QuestionListenChoose {...questionProps} />}
+      {current.questionType === 'typing' && <QuestionTyping {...questionProps} />}
+      {current.questionType === 'sentence-build' && <QuestionSentenceBuild {...questionProps} />}
     </div>
   );
 }

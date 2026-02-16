@@ -1,7 +1,7 @@
 'use client';
 
 import type { LearningItem } from '@/types/learning';
-import { generateOptionsFromItems, createBlankSentence } from '@/lib/utils/question-helpers';
+import { generateSmartDistractors, createBlankSentence } from '@/lib/utils/question-helpers';
 import { QuestionShell } from './question-shell';
 
 interface Props {
@@ -11,13 +11,19 @@ interface Props {
 }
 
 export function QuestionFillBlank({ item, allItems, onAnswer }: Props) {
-  const options = generateOptionsFromItems(item, allItems, (i) => i.term);
-  const blankSentence = createBlankSentence(item.example, item.term) ?? `______ : ${item.definition}`;
+  const options = generateSmartDistractors(item, allItems, (i) => i.term, 3);
+  const blankSentence = createBlankSentence(item.example, item.term) ?? `______ : ${item.turkishMeaning}`;
 
   return (
-    <QuestionShell options={options} correctAnswer={item.term} onAnswer={onAnswer}>
-      <p className="text-sm font-medium text-gray-400">Fill in the blank</p>
-      <p className="mt-3 text-lg font-medium text-gray-800">{blankSentence}</p>
+    <QuestionShell
+      options={options}
+      correctAnswer={item.term}
+      turkishMeaning={item.turkishMeaning}
+      onAnswer={onAnswer}
+    >
+      <p className="text-sm font-medium text-gray-400">Boslugu doldurun</p>
+      <p className="mt-4 text-lg font-medium leading-relaxed text-gray-800">{blankSentence}</p>
+      <p className="mt-2 text-xs text-gray-400">({item.turkishMeaning})</p>
     </QuestionShell>
   );
 }

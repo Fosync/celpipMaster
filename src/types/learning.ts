@@ -11,6 +11,7 @@ export interface LearningItem {
   partOfSpeech?: string;
   clbLevel: number;
   category: string;
+  emoji?: string;
 }
 
 export interface LearningSet {
@@ -24,11 +25,13 @@ export interface LearningSet {
 }
 
 export type QuestionType =
-  | 'english-to-turkish'
   | 'turkish-to-english'
-  | 'definition-match'
-  | 'fill-blank'
-  | 'listen-spell';
+  | 'english-to-turkish'
+  | 'emoji-match'
+  | 'fill-in-blank'
+  | 'listen-and-choose'
+  | 'typing'
+  | 'sentence-build';
 
 export type MasteryStatus = 'new' | 'learning' | 'learned' | 'mastered';
 
@@ -55,5 +58,14 @@ export interface MasteryStore {
 
 export interface QueueEntry {
   item: LearningItem;
+  questionType: QuestionType;
+}
+
+export interface QuizAnswer {
+  wordId: string;
+  word: string;
+  correct: boolean;
+  correctAnswer: string;
+  turkishMeaning: string;
   questionType: QuestionType;
 }

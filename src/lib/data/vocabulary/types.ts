@@ -7,6 +7,7 @@ export interface VocabWord {
   partOfSpeech: 'noun' | 'verb' | 'adjective' | 'adverb' | 'preposition' | 'phrase' | 'interjection';
   clbLevel: number;
   category: string;
+  emoji?: string;
 }
 
 export interface VocabSet {

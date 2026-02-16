@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { LearningItem } from '@/types/learning';
+import type { LearningItem, QuizAnswer } from '@/types/learning';
 import { useSpeech } from '@/hooks/use-speech';
 import { useMastery } from '@/hooks/use-mastery';
 import { ProgressHeader } from './common/progress-header';
@@ -21,9 +21,9 @@ interface QuizEngineProps {
 type Phase = 'learn' | 'practice' | 'test' | 'result';
 
 const phaseLabels: Record<Phase, string> = {
-  learn: 'Learn the words',
-  practice: 'Practice — mixed question types',
-  test: 'Test — prove your knowledge',
+  learn: 'Kelimeleri ogren',
+  practice: 'Pratik — karisik soru tipleri',
+  test: 'Test — bilgini kanitla',
   result: '',
 };
 
@@ -32,6 +32,7 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
   const [practiceItems, setPracticeItems] = useState<LearningItem[]>(items);
   const [testScore, setTestScore] = useState(0);
   const [testCorrectCount, setTestCorrectCount] = useState(0);
+  const [testAnswers, setTestAnswers] = useState<QuizAnswer[]>([]);
   const { speak } = useSpeech();
   const mastery = useMastery();
 
@@ -46,17 +47,20 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
     setPracticeIndex(0);
   }, [items]);
 
-  const handlePracticeComplete = useCallback(() => {
+  const handlePracticeComplete = useCallback((answers: QuizAnswer[]) => {
     setPhase('test');
     setTestIndex(0);
+    // Store practice answers for potential review, but reset for test
+    void answers;
   }, []);
 
   const handleTestPass = useCallback(
-    (score: number) => {
-      const correctCount = Math.round((score / 100) * items.length);
+    (score: number, answers: QuizAnswer[]) => {
+      const correctCount = answers.filter((a) => a.correct).length;
       setTestScore(score);
       setTestCorrectCount(correctCount);
-      const correctIds = items.map((i) => i.id); // simplified: all in test
+      setTestAnswers(answers);
+      const correctIds = items.map((i) => i.id);
       mastery.recordTestResult(setId, score, correctIds);
       setPhase('result');
     },
@@ -64,15 +68,18 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
   );
 
   const handleTestFail = useCallback(
-    (score: number, weakWordIds: string[]) => {
+    (score: number, weakWordIds: string[], answers: QuizAnswer[]) => {
+      const correctCount = answers.filter((a) => a.correct).length;
       setTestScore(score);
-      setTestCorrectCount(Math.round((score / 100) * items.length));
+      setTestCorrectCount(correctCount);
+      setTestAnswers(answers);
       // Go back to practice with weak words
       const weakItems = items.filter((i) => weakWordIds.includes(i.id));
       setPracticeItems(weakItems.length > 0 ? weakItems : items);
+      mastery.recordTestResult(setId, score, weakWordIds);
       setPhase('result');
     },
-    [items]
+    [items, setId, mastery]
   );
 
   const handleRestart = useCallback(() => {
@@ -86,7 +93,18 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
       setLearnIndex(0);
       setPracticeItems(items);
     }
+    setTestAnswers([]);
   }, [testScore, items]);
+
+  const handlePracticeWeak = useCallback(() => {
+    // Practice only the wrong words
+    const weakIds = testAnswers.filter((a) => !a.correct).map((a) => a.wordId);
+    const weakItems = items.filter((i) => weakIds.includes(i.id));
+    setPracticeItems(weakItems.length > 0 ? weakItems : items);
+    setPhase('practice');
+    setPracticeIndex(0);
+    setTestAnswers([]);
+  }, [testAnswers, items]);
 
   const handleRecordAnswer = useCallback(
     (wordId: string, correct: boolean) => {
@@ -111,7 +129,7 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
       case 'learn':
         return { index: learnIndex, total: items.length };
       case 'practice':
-        return { index: practiceIndex, total: practiceItems.length * 2 };
+        return { index: practiceIndex, total: Math.max(practiceItems.length, 10) };
       case 'test':
         return { index: testIndex, total: items.length };
       default:
@@ -128,8 +146,10 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
         totalCount={items.length}
         score={testScore}
         stars={stars}
+        answers={testAnswers}
         backHref={backHref}
         onRestart={handleRestart}
+        onPracticeWeak={handlePracticeWeak}
       />
     );
   }

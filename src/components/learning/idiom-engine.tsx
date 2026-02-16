@@ -829,8 +829,10 @@ export function IdiomEngine({ idioms, allIdioms, setId, setTitle, clbLevel, back
         totalCount={idioms.length}
         score={testScore}
         stars={stars}
+        answers={[]}
         backHref={backHref}
         onRestart={handleRestart}
+        onPracticeWeak={handleRestart}
       />
     );
   }

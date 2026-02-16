@@ -29,6 +29,7 @@ export default async function VocabSetPage({ params }: PageProps) {
     partOfSpeech: w.partOfSpeech,
     clbLevel: w.clbLevel,
     category: w.category,
+    emoji: w.emoji,
   }));
 
   return (
