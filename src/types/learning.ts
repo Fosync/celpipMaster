@@ -27,7 +27,6 @@ export interface LearningSet {
 export type QuestionType =
   | 'turkish-to-english'
   | 'english-to-turkish'
-  | 'emoji-match'
   | 'fill-in-blank'
   | 'listen-and-choose'
   | 'typing'

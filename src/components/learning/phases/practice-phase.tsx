@@ -5,7 +5,6 @@ import type { LearningItem, QuestionType, QueueEntry, QuizAnswer } from '@/types
 import { shuffleArray } from '@/lib/utils/question-helpers';
 import { QuestionTurkishToEnglish } from '../questions/question-turkish-to-english';
 import { QuestionEnglishToTurkish } from '../questions/question-english-to-turkish';
-import { QuestionEmojiMatch } from '../questions/question-emoji-match';
 import { QuestionFillBlank } from '../questions/question-fill-blank';
 import { QuestionListenChoose } from '../questions/question-listen-choose';
 import { QuestionTyping } from '../questions/question-typing';
@@ -13,6 +12,7 @@ import { QuestionSentenceBuild } from '../questions/question-sentence-build';
 
 interface PracticePhaseProps {
   items: LearningItem[];
+  allItemsForDistractors?: LearningItem[];
   onComplete: (answers: QuizAnswer[]) => void;
   onRecordAnswer: (wordId: string, correct: boolean) => void;
   speak: (text: string) => void;
@@ -22,49 +22,38 @@ interface PracticePhaseProps {
 const EASY_TYPES: QuestionType[] = ['turkish-to-english'];
 const MEDIUM_TYPES: QuestionType[] = ['english-to-turkish', 'fill-in-blank'];
 const HARD_TYPES: QuestionType[] = ['listen-and-choose', 'typing'];
-const EXPERT_TYPES: QuestionType[] = ['emoji-match', 'sentence-build'];
+const EXPERT_TYPES: QuestionType[] = ['sentence-build'];
 
 /**
  * Build a progressive quiz queue:
  * - First 3: turkish-to-english (easiest)
  * - Next 3: english-to-turkish + fill-in-blank (medium)
  * - Next 2: listen-and-choose + typing (hard)
- * - Last 2: emoji-match + sentence-build (expert)
- * Total: 10-12 questions for 10 words
+ * - Last 2+: sentence-build (expert)
  */
 function buildProgressiveQueue(items: LearningItem[]): QueueEntry[] {
   const shuffled = shuffleArray(items);
   const queue: QueueEntry[] = [];
 
-  // Phase 1: Easy (first 3 words)
-  for (let i = 0; i < Math.min(3, shuffled.length); i++) {
-    const type = EASY_TYPES[i % EASY_TYPES.length];
+  for (let i = 0; i < shuffled.length; i++) {
+    let type: QuestionType;
+    if (i < 3) {
+      type = EASY_TYPES[i % EASY_TYPES.length];
+    } else if (i < 6) {
+      type = MEDIUM_TYPES[(i - 3) % MEDIUM_TYPES.length];
+    } else if (i < 8) {
+      type = HARD_TYPES[(i - 6) % HARD_TYPES.length];
+    } else {
+      type = EXPERT_TYPES[(i - 8) % EXPERT_TYPES.length];
+    }
     queue.push({ item: shuffled[i], questionType: type });
   }
 
-  // Phase 2: Medium (next 3 words)
-  for (let i = 3; i < Math.min(6, shuffled.length); i++) {
-    const type = MEDIUM_TYPES[(i - 3) % MEDIUM_TYPES.length];
-    queue.push({ item: shuffled[i], questionType: type });
-  }
-
-  // Phase 3: Hard (next 2 words)
-  for (let i = 6; i < Math.min(8, shuffled.length); i++) {
-    const type = HARD_TYPES[(i - 6) % HARD_TYPES.length];
-    queue.push({ item: shuffled[i], questionType: type });
-  }
-
-  // Phase 4: Expert (remaining words)
-  for (let i = 8; i < shuffled.length; i++) {
-    const type = EXPERT_TYPES[(i - 8) % EXPERT_TYPES.length];
-    queue.push({ item: shuffled[i], questionType: type });
-  }
-
-  // If set has fewer than 10 words, add extra questions from harder types
+  // Ensure minimum 10 questions
   if (queue.length < 10) {
     const extraCount = 10 - queue.length;
     const extraItems = shuffleArray(items);
-    const allHarder = [...MEDIUM_TYPES, ...HARD_TYPES, ...EXPERT_TYPES];
+    const allHarder = [...MEDIUM_TYPES, ...HARD_TYPES];
     for (let i = 0; i < extraCount && i < extraItems.length; i++) {
       queue.push({
         item: extraItems[i],
@@ -76,13 +65,26 @@ function buildProgressiveQueue(items: LearningItem[]): QueueEntry[] {
   return queue;
 }
 
-export function PracticePhase({ items, onComplete, onRecordAnswer, speak }: PracticePhaseProps) {
+export function PracticePhase({
+  items,
+  allItemsForDistractors,
+  onComplete,
+  onRecordAnswer,
+  speak,
+}: PracticePhaseProps) {
   const [queue, setQueue] = useState<QueueEntry[]>(() => buildProgressiveQueue(items));
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
+  // Track how many times each word was answered wrong (for aggressive re-queue)
+  const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({});
 
   const current = queue[currentIdx];
   const totalQuestions = queue.length;
+
+  // Use the global pool for distractors if available, otherwise fall back to set items
+  const distractorItems = allItemsForDistractors && allItemsForDistractors.length > items.length
+    ? allItemsForDistractors
+    : items;
 
   const handleAnswer = useCallback(
     (correct: boolean) => {
@@ -101,22 +103,42 @@ export function PracticePhase({ items, onComplete, onRecordAnswer, speak }: Prac
       setAnswers(newAnswers);
 
       if (!correct) {
-        // Re-queue wrong answer with a harder question type
-        const harderTypes = [...MEDIUM_TYPES, ...HARD_TYPES];
-        const nextType = harderTypes[Math.floor(Math.random() * harderTypes.length)];
-        const insertPos = Math.min(currentIdx + 3 + Math.floor(Math.random() * 3), queue.length);
+        const wordId = current.item.id;
+        const currentWrongCount = (wrongCounts[wordId] || 0) + 1;
+        setWrongCounts((prev) => ({ ...prev, [wordId]: currentWrongCount }));
+
+        // RE-QUEUE: Add 2 more questions for this word (different types each time)
+        const reTypes = currentWrongCount <= 1
+          ? [...EASY_TYPES, ...MEDIUM_TYPES]  // First mistake: easier questions
+          : [...MEDIUM_TYPES, ...HARD_TYPES]; // Repeated mistake: medium-hard
+
         const newQueue = [...queue];
-        newQueue.splice(insertPos, 0, { item: current.item, questionType: nextType });
+
+        // Add first re-queue 2-4 positions later
+        const type1 = reTypes[Math.floor(Math.random() * reTypes.length)];
+        const pos1 = Math.min(currentIdx + 2 + Math.floor(Math.random() * 3), newQueue.length);
+        newQueue.splice(pos1, 0, { item: current.item, questionType: type1 });
+
+        // Add second re-queue 5-7 positions later (different type)
+        const remainingTypes = reTypes.filter((t) => t !== type1);
+        const type2 = remainingTypes.length > 0
+          ? remainingTypes[Math.floor(Math.random() * remainingTypes.length)]
+          : reTypes[Math.floor(Math.random() * reTypes.length)];
+        const pos2 = Math.min(currentIdx + 5 + Math.floor(Math.random() * 3), newQueue.length);
+        newQueue.splice(pos2, 0, { item: current.item, questionType: type2 });
+
         setQueue(newQueue);
       }
 
-      if (currentIdx + 1 >= (correct ? queue.length : queue.length + 1)) {
+      // +2 because we added 2 items to queue on wrong answer
+      const nextQueueLen = correct ? queue.length : queue.length + 2;
+      if (currentIdx + 1 >= nextQueueLen) {
         onComplete(newAnswers);
       } else {
         setCurrentIdx(currentIdx + 1);
       }
     },
-    [current, currentIdx, queue, answers, onRecordAnswer, onComplete]
+    [current, currentIdx, queue, answers, wrongCounts, onRecordAnswer, onComplete]
   );
 
   if (!current || currentIdx >= totalQuestions) {
@@ -125,7 +147,7 @@ export function PracticePhase({ items, onComplete, onRecordAnswer, speak }: Prac
 
   const questionProps = {
     item: current.item,
-    allItems: items,
+    allItems: distractorItems,
     onAnswer: handleAnswer,
     speak,
   };
@@ -150,7 +172,6 @@ export function PracticePhase({ items, onComplete, onRecordAnswer, speak }: Prac
       {/* Render question by type */}
       {current.questionType === 'turkish-to-english' && <QuestionTurkishToEnglish {...questionProps} />}
       {current.questionType === 'english-to-turkish' && <QuestionEnglishToTurkish {...questionProps} />}
-      {current.questionType === 'emoji-match' && <QuestionEmojiMatch {...questionProps} />}
       {current.questionType === 'fill-in-blank' && <QuestionFillBlank {...questionProps} />}
       {current.questionType === 'listen-and-choose' && <QuestionListenChoose {...questionProps} />}
       {current.questionType === 'typing' && <QuestionTyping {...questionProps} />}
@@ -169,7 +190,6 @@ function getDifficultyLabel(type: QuestionType): string {
     case 'listen-and-choose':
     case 'typing':
       return 'Zor';
-    case 'emoji-match':
     case 'sentence-build':
       return 'Uzman';
   }

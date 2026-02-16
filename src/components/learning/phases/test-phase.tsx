@@ -5,7 +5,6 @@ import type { LearningItem, QuestionType, QueueEntry, QuizAnswer } from '@/types
 import { shuffleArray } from '@/lib/utils/question-helpers';
 import { QuestionTurkishToEnglish } from '../questions/question-turkish-to-english';
 import { QuestionEnglishToTurkish } from '../questions/question-english-to-turkish';
-import { QuestionEmojiMatch } from '../questions/question-emoji-match';
 import { QuestionFillBlank } from '../questions/question-fill-blank';
 import { QuestionListenChoose } from '../questions/question-listen-choose';
 import { QuestionTyping } from '../questions/question-typing';
@@ -13,6 +12,7 @@ import { QuestionSentenceBuild } from '../questions/question-sentence-build';
 
 interface TestPhaseProps {
   items: LearningItem[];
+  allItemsForDistractors?: LearningItem[];
   onPass: (score: number, answers: QuizAnswer[]) => void;
   onFail: (score: number, weakWordIds: string[], answers: QuizAnswer[]) => void;
   onRecordAnswer: (wordId: string, correct: boolean) => void;
@@ -25,7 +25,6 @@ const ALL_TYPES: QuestionType[] = [
   'fill-in-blank',
   'listen-and-choose',
   'typing',
-  'emoji-match',
   'sentence-build',
 ];
 
@@ -37,12 +36,24 @@ function buildTestQueue(items: LearningItem[]): QueueEntry[] {
   }));
 }
 
-export function TestPhase({ items, onPass, onFail, onRecordAnswer, speak }: TestPhaseProps) {
+export function TestPhase({
+  items,
+  allItemsForDistractors,
+  onPass,
+  onFail,
+  onRecordAnswer,
+  speak,
+}: TestPhaseProps) {
   const [queue] = useState<QueueEntry[]>(() => buildTestQueue(items));
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
 
   const current = queue[currentIdx];
+
+  // Use the global pool for distractors if available, otherwise fall back to set items
+  const distractorItems = allItemsForDistractors && allItemsForDistractors.length > items.length
+    ? allItemsForDistractors
+    : items;
 
   const handleAnswer = useCallback(
     (correct: boolean) => {
@@ -84,7 +95,7 @@ export function TestPhase({ items, onPass, onFail, onRecordAnswer, speak }: Test
 
   const questionProps = {
     item: current.item,
-    allItems: items,
+    allItems: distractorItems,
     onAnswer: handleAnswer,
     speak,
   };
@@ -104,7 +115,6 @@ export function TestPhase({ items, onPass, onFail, onRecordAnswer, speak }: Test
       {/* Render question by type */}
       {current.questionType === 'turkish-to-english' && <QuestionTurkishToEnglish {...questionProps} />}
       {current.questionType === 'english-to-turkish' && <QuestionEnglishToTurkish {...questionProps} />}
-      {current.questionType === 'emoji-match' && <QuestionEmojiMatch {...questionProps} />}
       {current.questionType === 'fill-in-blank' && <QuestionFillBlank {...questionProps} />}
       {current.questionType === 'listen-and-choose' && <QuestionListenChoose {...questionProps} />}
       {current.questionType === 'typing' && <QuestionTyping {...questionProps} />}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { LearningItem, QuizAnswer } from '@/types/learning';
 import { useSpeech } from '@/hooks/use-speech';
 import { useMastery } from '@/hooks/use-mastery';
@@ -12,6 +12,7 @@ import { QuizResult } from './results/quiz-result';
 
 interface QuizEngineProps {
   items: LearningItem[];
+  distractorPool?: LearningItem[];
   setId: string;
   setTitle: string;
   clbLevel: number;
@@ -27,7 +28,7 @@ const phaseLabels: Record<Phase, string> = {
   result: '',
 };
 
-export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizEngineProps) {
+export function QuizEngine({ items, distractorPool, setId, setTitle, clbLevel, backHref }: QuizEngineProps) {
   const [phase, setPhase] = useState<Phase>('learn');
   const [practiceItems, setPracticeItems] = useState<LearningItem[]>(items);
   const [testScore, setTestScore] = useState(0);
@@ -36,7 +37,14 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
   const { speak } = useSpeech();
   const mastery = useMastery();
 
-  // Phase index tracking for progress header
+  // Combine current items with distractor pool for diverse options
+  const allItemsForDistractors = useMemo(() => {
+    if (distractorPool && distractorPool.length > 0) {
+      return [...items, ...distractorPool];
+    }
+    return items;
+  }, [items, distractorPool]);
+
   const [learnIndex, setLearnIndex] = useState(0);
   const [practiceIndex, setPracticeIndex] = useState(0);
   const [testIndex, setTestIndex] = useState(0);
@@ -50,7 +58,6 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
   const handlePracticeComplete = useCallback((answers: QuizAnswer[]) => {
     setPhase('test');
     setTestIndex(0);
-    // Store practice answers for potential review, but reset for test
     void answers;
   }, []);
 
@@ -73,7 +80,6 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
       setTestScore(score);
       setTestCorrectCount(correctCount);
       setTestAnswers(answers);
-      // Go back to practice with weak words
       const weakItems = items.filter((i) => weakWordIds.includes(i.id));
       setPracticeItems(weakItems.length > 0 ? weakItems : items);
       mastery.recordTestResult(setId, score, weakWordIds);
@@ -84,11 +90,9 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
 
   const handleRestart = useCallback(() => {
     if (testScore < 80) {
-      // Failed: go to practice with weak words
       setPhase('practice');
       setPracticeIndex(0);
     } else {
-      // Passed: full restart
       setPhase('learn');
       setLearnIndex(0);
       setPracticeItems(items);
@@ -97,7 +101,6 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
   }, [testScore, items]);
 
   const handlePracticeWeak = useCallback(() => {
-    // Practice only the wrong words
     const weakIds = testAnswers.filter((a) => !a.correct).map((a) => a.wordId);
     const weakItems = items.filter((i) => weakIds.includes(i.id));
     setPracticeItems(weakItems.length > 0 ? weakItems : items);
@@ -123,7 +126,6 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
     [mastery]
   );
 
-  // Calculate progress header values
   const getProgressValues = () => {
     switch (phase) {
       case 'learn':
@@ -178,6 +180,7 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
       {phase === 'practice' && (
         <PracticePhase
           items={practiceItems}
+          allItemsForDistractors={allItemsForDistractors}
           onComplete={handlePracticeComplete}
           onRecordAnswer={handleRecordAnswer}
           speak={speak}
@@ -187,6 +190,7 @@ export function QuizEngine({ items, setId, setTitle, clbLevel, backHref }: QuizE
       {phase === 'test' && (
         <TestPhase
           items={items}
+          allItemsForDistractors={allItemsForDistractors}
           onPass={handleTestPass}
           onFail={handleTestFail}
           onRecordAnswer={handleRecordAnswer}
