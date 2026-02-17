@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import { patternSets } from '@/lib/data/patterns';
+import { patternSynonymMap } from '@/lib/data/patterns/synonyms';
 import { QuizEngine } from '@/components/learning/quiz-engine';
+import type { LearningItem } from '@/types/learning';
 
 interface PageProps {
   params: Promise<{ setId: string }>;
@@ -18,9 +20,14 @@ export default async function PatternSetPage({ params }: PageProps) {
     notFound();
   }
 
+  const items: LearningItem[] = set.words.map((w) => ({
+    ...w,
+    synonyms: w.synonyms || patternSynonymMap[w.id],
+  }));
+
   return (
     <QuizEngine
-      items={set.words}
+      items={items}
       setId={set.id}
       setTitle={set.title}
       clbLevel={set.clbLevel}

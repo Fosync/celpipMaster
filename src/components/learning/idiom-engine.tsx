@@ -14,10 +14,12 @@ import { QuizResult } from './results/quiz-result';
 // Phase 1: Introduction - Flashcard with meaning, example, whenToUse, audio
 function IntroPhase({
   idioms,
+  allIdioms,
   onComplete,
   speak,
 }: {
   idioms: IdiomWord[];
+  allIdioms: IdiomWord[];
   onComplete: () => void;
   speak: (text: string) => void;
 }) {
@@ -94,6 +96,62 @@ function IntroPhase({
             ))}
           </div>
         )}
+
+        {/* Similar Idioms */}
+        {current.similarIdioms.length > 0 && (() => {
+          const resolved = current.similarIdioms
+            .map((id) => allIdioms.find((i) => i.id === id))
+            .filter((i): i is IdiomWord => i != null);
+          if (resolved.length === 0) return null;
+          return (
+            <div className="bg-amber-50 rounded-xl p-4">
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-2">Benzer / Similar Idioms</p>
+              <div className="flex flex-wrap gap-2">
+                {resolved.map((sim) => (
+                  <button
+                    key={sim.id}
+                    type="button"
+                    onClick={() => speak(sim.idiom)}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-200 active:bg-amber-300"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 8.788v6.424a.5.5 0 00.757.429l4.486-3.212a.5.5 0 000-.858L7.257 8.36a.5.5 0 00-.757.429z" />
+                    </svg>
+                    {sim.idiom}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Opposite Idioms */}
+        {current.oppositeIdioms.length > 0 && (() => {
+          const resolved = current.oppositeIdioms
+            .map((id) => allIdioms.find((i) => i.id === id))
+            .filter((i): i is IdiomWord => i != null);
+          if (resolved.length === 0) return null;
+          return (
+            <div className="bg-rose-50 rounded-xl p-4">
+              <p className="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-2">Zit / Opposite Idioms</p>
+              <div className="flex flex-wrap gap-2">
+                {resolved.map((opp) => (
+                  <button
+                    key={opp.id}
+                    type="button"
+                    onClick={() => speak(opp.idiom)}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1.5 text-sm font-medium text-rose-800 transition-colors hover:bg-rose-200 active:bg-rose-300"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 8.788v6.424a.5.5 0 00.757.429l4.486-3.212a.5.5 0 000-.858L7.257 8.36a.5.5 0 00-.757.429z" />
+                    </svg>
+                    {opp.idiom}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Progress indicator */}
@@ -851,6 +909,7 @@ export function IdiomEngine({ idioms, allIdioms, setId, setTitle, clbLevel, back
       {phase === 'intro' && (
         <IntroPhase
           idioms={idioms}
+          allIdioms={allIdioms}
           onComplete={() => setPhase('context')}
           speak={speak}
         />
