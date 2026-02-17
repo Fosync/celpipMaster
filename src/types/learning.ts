@@ -12,6 +12,7 @@ export interface LearningItem {
   clbLevel: number;
   category: string;
   emoji?: string;
+  synonyms?: string[];
 }
 
 export interface LearningSet {

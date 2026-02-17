@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { vocabularySets } from '@/lib/data/vocabulary';
+import { synonymMap } from '@/lib/data/vocabulary/synonyms';
 import { QuizEngine } from '@/components/learning/quiz-engine';
 import type { LearningItem } from '@/types/learning';
 
@@ -51,6 +52,7 @@ export default async function VocabSetPage({ params }: PageProps) {
     clbLevel: w.clbLevel,
     category: w.category,
     emoji: w.emoji,
+    synonyms: w.synonyms || synonymMap[w.word.toLowerCase()],
   }));
 
   // Get words from OTHER sets for diverse distractors

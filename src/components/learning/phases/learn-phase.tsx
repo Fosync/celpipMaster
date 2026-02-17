@@ -78,6 +78,29 @@ export function LearnPhase({ items, onComplete, onMarkSeen, speak }: LearnPhaseP
                   <p className="text-sm font-medium text-purple-600">Turkce</p>
                   <p className="mt-1 text-gray-800">{currentItem.turkishMeaning}</p>
                 </div>
+                {currentItem.synonyms && currentItem.synonyms.length > 0 && (
+                  <div className="rounded-xl bg-amber-50 p-4">
+                    <p className="text-sm font-medium text-amber-600">Benzer / Es Anlamli</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {currentItem.synonyms.map((syn) => (
+                        <button
+                          key={syn}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            speak(syn);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-200 active:bg-amber-300"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 8.788v6.424a.5.5 0 00.757.429l4.486-3.212a.5.5 0 000-.858L7.257 8.36a.5.5 0 00-.757.429z" />
+                          </svg>
+                          {syn}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="mt-8 text-sm text-gray-400">Tap to reveal definition</p>

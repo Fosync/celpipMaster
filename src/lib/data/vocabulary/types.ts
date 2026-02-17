@@ -8,6 +8,7 @@ export interface VocabWord {
   clbLevel: number;
   category: string;
   emoji?: string;
+  synonyms?: string[];
 }
 
 export interface VocabSet {
