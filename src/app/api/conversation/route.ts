@@ -6,6 +6,11 @@ interface ConversationMessage {
   text: string;
 }
 
+// Limit conversation history to prevent token bloat and 429 errors
+const MAX_HISTORY_MESSAGES = 10;
+// Timeout for Gemini API calls
+const GEMINI_TIMEOUT_MS = 15000;
+
 const SYSTEM_PROMPT = `You are Mia, a warm and friendly Canadian English conversation partner. You are NOT a teacher. You're more like a close friend who happens to help with English.
 
 PERSONALITY:
@@ -119,8 +124,10 @@ export async function POST(request: NextRequest) {
     const genAI = new GoogleGenerativeAI(geminiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-    // Build conversation history string
-    const historyText = conversationHistory
+    // Limit history to last N messages to prevent token bloat and 429 rate limits
+    const recentHistory = conversationHistory.slice(-MAX_HISTORY_MESSAGES);
+
+    const historyText = recentHistory
       .map((msg) => `${msg.role === 'ai' ? 'Mia' : 'Student'}: ${msg.text}`)
       .join('\n');
 
@@ -141,31 +148,82 @@ Student just said (turn ${turnNumber}): "${userTranscript}"
 
 Respond as Mia in the JSON format specified.`;
 
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: SYSTEM_PROMPT + '\n\n' + userMessage }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.85,
-        maxOutputTokens: 1024,
-        responseMimeType: 'application/json',
-      },
+    // Use Promise.race for timeout since Gemini SDK doesn't support AbortController
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('GEMINI_TIMEOUT')), GEMINI_TIMEOUT_MS);
     });
+
+    let result;
+    try {
+      result = await Promise.race([
+        model.generateContent({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: SYSTEM_PROMPT + '\n\n' + userMessage }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.85,
+            maxOutputTokens: 1024,
+            responseMimeType: 'application/json',
+          },
+        }),
+        timeoutPromise,
+      ]);
+    } catch (err: unknown) {
+      const errMsg = String(err);
+
+      if (errMsg.includes('GEMINI_TIMEOUT')) {
+        return NextResponse.json(
+          { error: 'Response took too long. Please try again.' },
+          { status: 504 }
+        );
+      }
+
+      if (errMsg.includes('429') || errMsg.includes('Resource exhausted')) {
+        return NextResponse.json(
+          { error: 'Mia is taking a short break. Please wait a moment and try again.' },
+          { status: 429 }
+        );
+      }
+
+      throw err;
+    }
 
     const responseText = result.response.text();
 
+    // Robust JSON parsing with plain text fallback
     let parsed;
     try {
       parsed = JSON.parse(responseText);
     } catch {
+      // Try extracting JSON object from text (might be wrapped in markdown)
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[0]);
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch {
+          // JSON extraction failed — use raw text as Mia's response
+          parsed = {
+            response: responseText.replace(/```json\n?|```\n?/g, '').trim(),
+            correction: null,
+            new_vocabulary: null,
+            mood: 'neutral',
+            good_phrases: null,
+            follow_up_topic: null,
+          };
+        }
       } else {
-        throw new Error('Failed to parse Gemini response as JSON');
+        // Plain text fallback — treat entire response as Mia's message
+        parsed = {
+          response: responseText.trim(),
+          correction: null,
+          new_vocabulary: null,
+          mood: 'neutral',
+          good_phrases: null,
+          follow_up_topic: null,
+        };
       }
     }
 

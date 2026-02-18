@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { conversationScenarios, freeChat } from '@/lib/data/speaking';
@@ -34,15 +34,37 @@ export default function ConversationPage() {
 
   const [showSummary, setShowSummary] = useState(false);
 
+  // Auto-flow state
+  const [conversationStarted, setConversationStarted] = useState(false);
+  const [autoFlow, setAutoFlow] = useState(false);
+  const autoFlowRef = useRef(false);
+  const conversationStartedRef = useRef(false);
+  const conversationEndedRef = useRef(false);
+
   // Google TTS for high-quality AI voice
   const tts = useGoogleTTS();
   const isSpeaking = tts.isPlaying || tts.isLoading;
 
-  // Mood-aware TTS function — Mia uses ElevenLabs pro voice
+  // Refs for accessing latest state in callbacks
+  const conversationRef = useRef<ReturnType<typeof useConversation>>(null!);
+
+  // TTS done handler — auto-open mic after 0.5s delay
+  const handleTTSDone = useCallback(() => {
+    if (!autoFlowRef.current || conversationEndedRef.current) return;
+    setTimeout(() => {
+      if (autoFlowRef.current && !conversationEndedRef.current) {
+        speechRecognitionRef.current.start();
+      }
+    }, 500);
+  }, []);
+
+  // Mood-aware TTS — Mia uses ElevenLabs pro voice
+  // Only speaks after user clicks "Start Conversation"
   const speak = useCallback((text: string, mood?: string) => {
+    if (!conversationStartedRef.current) return;
     const settings = MOOD_VOICE_SETTINGS[mood ?? 'happy'] ?? MOOD_VOICE_SETTINGS.happy;
-    tts.playText(text, 'nova', settings.rate, undefined, 'pro');
-  }, [tts.playText]);
+    tts.playText(text, 'nova', settings.rate, handleTTSDone, 'pro');
+  }, [tts.playText, handleTTSDone]);
 
   // Conversation hook
   const conversation = useConversation({
@@ -52,9 +74,29 @@ export default function ConversationPage() {
     difficulty,
     onSpeak: speak,
   });
+  conversationRef.current = conversation;
 
-  // Speech recognition
-  const speechRecognition = useSpeechRecognition();
+  // Track conversation ended
+  useEffect(() => {
+    conversationEndedRef.current = conversation.isEnded;
+  }, [conversation.isEnded]);
+
+  // Auto-send handler — called when speech recognition auto-stops (silence/browser end)
+  const handleAutoSend = useCallback((transcript: string) => {
+    if (!autoFlowRef.current || conversationEndedRef.current) return;
+    if (transcript.trim()) {
+      conversationRef.current.sendMessage(transcript);
+    }
+  }, []);
+
+  // Speech recognition with auto-stop on silence
+  const speechRecognition = useSpeechRecognition({
+    continuous: false,
+    silenceTimeoutMs: 2000,
+    onAutoStop: handleAutoSend,
+  });
+  const speechRecognitionRef = useRef(speechRecognition);
+  speechRecognitionRef.current = speechRecognition;
 
   // Show summary when conversation ends
   useEffect(() => {
@@ -64,28 +106,69 @@ export default function ConversationPage() {
     }
   }, [conversation.isEnded, showSummary]);
 
-  // Handle mic toggle — includes AI interruption
+  // Start conversation — plays opening line TTS, enables auto-flow
+  const handleStartConversation = useCallback(() => {
+    conversationStartedRef.current = true;
+    setConversationStarted(true);
+    autoFlowRef.current = true;
+    setAutoFlow(true);
+
+    // Speak the opening line
+    const openingText = conversationRef.current.messages[0]?.text || scenario?.openingLine || '';
+    if (openingText) {
+      const settings = MOOD_VOICE_SETTINGS.happy;
+      tts.playText(openingText, 'nova', settings.rate, handleTTSDone, 'pro');
+    }
+  }, [scenario?.openingLine, tts.playText, handleTTSDone]);
+
+  // Toggle auto-flow pause/resume
+  const handleToggleAutoFlow = useCallback(() => {
+    if (autoFlow) {
+      // Pause auto-flow
+      autoFlowRef.current = false;
+      setAutoFlow(false);
+      if (speechRecognition.isListening) {
+        speechRecognition.stop();
+      }
+    } else {
+      // Resume auto-flow
+      autoFlowRef.current = true;
+      setAutoFlow(true);
+      // If not currently speaking/loading, open mic
+      if (!tts.isPlaying && !tts.isLoading && !conversationRef.current.isLoading) {
+        speechRecognition.start();
+      }
+    }
+  }, [autoFlow, speechRecognition, tts.isPlaying, tts.isLoading]);
+
+  // Manual mic toggle — works in both auto and manual modes
   const handleMicToggle = useCallback(() => {
     if (speechRecognition.isListening) {
-      // Stop recording and send message
+      // Stop recording and send message manually
       speechRecognition.stop();
       const transcript = speechRecognition.transcript;
       if (transcript.trim()) {
         conversation.sendMessage(transcript);
       }
-      speechRecognition.reset();
     } else {
-      // Interrupt AI if speaking (user takes control)
+      // Interrupt AI if speaking
       if (isSpeaking) {
         tts.stop();
+      }
+      // If not started yet, start the conversation
+      if (!conversationStartedRef.current) {
+        handleStartConversation();
+        return;
       }
       // Start recording
       speechRecognition.start();
     }
-  }, [speechRecognition, conversation, tts, isSpeaking]);
+  }, [speechRecognition, conversation, tts, isSpeaking, handleStartConversation]);
 
   // Handle end conversation
   const handleEnd = useCallback(() => {
+    autoFlowRef.current = false;
+    setAutoFlow(false);
     speechRecognition.stop();
     speechRecognition.reset();
     tts.stop();
@@ -95,17 +178,27 @@ export default function ConversationPage() {
   // Handle try again
   const handleTryAgain = useCallback(() => {
     setShowSummary(false);
+    autoFlowRef.current = false;
+    setAutoFlow(false);
+    conversationStartedRef.current = false;
+    setConversationStarted(false);
+    conversationEndedRef.current = false;
     speechRecognition.reset();
     tts.stop();
     conversation.reset();
   }, [speechRecognition, conversation, tts]);
 
-  // Speak message handler for chat bubbles
+  // Speak message handler for chat bubble replay
   const handleSpeakMessage = useCallback(
     (text: string) => {
-      speak(text, 'happy');
+      if (!conversationStartedRef.current) {
+        conversationStartedRef.current = true;
+        setConversationStarted(true);
+      }
+      const settings = MOOD_VOICE_SETTINGS.happy;
+      tts.playText(text, 'nova', settings.rate, undefined, 'pro');
     },
-    [speak]
+    [tts.playText]
   );
 
   if (!scenario) {
@@ -146,6 +239,19 @@ export default function ConversationPage() {
     ? 'recording'
     : 'idle';
 
+  // Status text
+  const getStatusText = () => {
+    if (conversation.isEnded) return 'Conversation ended';
+    if (!conversationStarted) return 'Tap to start your conversation with Mia';
+    if (micState === 'recording') {
+      return autoFlow ? 'Listening... will auto-send on pause' : 'Tap to send';
+    }
+    if (micState === 'processing') return 'Mia is thinking...';
+    if (isSpeaking) return autoFlow ? 'Mia is speaking...' : 'Tap to interrupt & speak';
+    if (autoFlow) return 'Getting ready...';
+    return 'Tap mic to speak';
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
       {/* Top Bar */}
@@ -181,6 +287,12 @@ export default function ConversationPage() {
               }`}>
                 {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
               </span>
+              {autoFlow && (
+                <>
+                  <span className="mx-1.5 text-gray-300">|</span>
+                  <span className="text-blue-500 font-medium">Auto</span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -219,7 +331,7 @@ export default function ConversationPage() {
         )}
 
         {/* AI speaking indicator */}
-        {isSpeaking && !speechRecognition.isListening && (
+        {isSpeaking && !speechRecognition.isListening && conversationStarted && (
           <div className="mb-3 flex items-center justify-center gap-2">
             <div className="flex gap-1">
               {[0, 1, 2].map((i) => (
@@ -251,23 +363,66 @@ export default function ConversationPage() {
           </div>
         )}
 
-        {/* Mic button */}
+        {/* Main control area */}
         <div className="flex flex-col items-center gap-2">
-          <MicButton
-            state={micState}
-            onClick={handleMicToggle}
-            disabled={conversation.isEnded}
-          />
+          {!conversationStarted ? (
+            /* Start Conversation button */
+            <button
+              onClick={handleStartConversation}
+              disabled={conversation.isEnded}
+              className="flex items-center gap-2.5 px-7 py-3.5 bg-green-500 hover:bg-green-600 text-white rounded-full font-semibold text-sm transition-all shadow-lg shadow-green-500/25 hover:shadow-green-500/40 active:scale-95"
+            >
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="9" y="1" width="6" height="12" rx="3" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+              Start Conversation
+            </button>
+          ) : (
+            /* Mic button + auto-flow toggle */
+            <>
+              <MicButton
+                state={micState}
+                onClick={handleMicToggle}
+                disabled={conversation.isEnded}
+              />
+
+              {/* Auto-flow toggle */}
+              {!conversation.isEnded && (
+                <button
+                  onClick={handleToggleAutoFlow}
+                  className={`mt-1 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    autoFlow
+                      ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                >
+                  {autoFlow ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                      Auto Mode On — Tap to Pause
+                    </span>
+                  ) : (
+                    'Resume Auto Mode'
+                  )}
+                </button>
+              )}
+            </>
+          )}
+
+          {/* Status text */}
           <p className="text-xs text-gray-400">
-            {conversation.isEnded
-              ? 'Conversation ended'
-              : micState === 'recording'
-              ? 'Tap to send'
-              : micState === 'processing'
-              ? 'Mia is thinking...'
-              : isSpeaking
-              ? 'Tap to interrupt & speak'
-              : 'Tap to speak'}
+            {getStatusText()}
           </p>
         </div>
       </div>
