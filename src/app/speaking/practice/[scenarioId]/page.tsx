@@ -38,10 +38,10 @@ export default function ConversationPage() {
   const tts = useGoogleTTS();
   const isSpeaking = tts.isPlaying || tts.isLoading;
 
-  // Mood-aware TTS function
+  // Mood-aware TTS function — Mia uses ElevenLabs pro voice
   const speak = useCallback((text: string, mood?: string) => {
     const settings = MOOD_VOICE_SETTINGS[mood ?? 'happy'] ?? MOOD_VOICE_SETTINGS.happy;
-    tts.playText(text, 'nova', settings.rate);
+    tts.playText(text, 'nova', settings.rate, undefined, 'pro');
   }, [tts.playText]);
 
   // Conversation hook

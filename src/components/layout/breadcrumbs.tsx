@@ -13,9 +13,13 @@ const pathLabels: Record<string, string> = {
   writing: 'Writing',
   listening: 'Listening',
   patterns: 'Patterns',
+  shadowing: 'Shadowing',
   speaking: 'Speaking',
+  practice: 'Daily Speaking',
   exam: 'Exam',
   profile: 'Profile',
+  coach: 'AI Coach',
+  'placement-test': 'Placement Test',
 };
 
 export function Breadcrumbs() {

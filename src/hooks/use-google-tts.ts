@@ -10,8 +10,10 @@ export type TTSVoice =
   | 'nova'    // Female
   | 'shimmer';
 
+export type TTSEngine = 'standard' | 'pro';
+
 interface UseGoogleTTSReturn {
-  playText: (text: string, voice?: TTSVoice, speed?: number, onDone?: () => void) => void;
+  playText: (text: string, voice?: TTSVoice, speed?: number, onDone?: () => void, engine?: TTSEngine) => void;
   stop: () => void;
   isLoading: boolean;
   isPlaying: boolean;
@@ -50,7 +52,7 @@ export function useGoogleTTS(): UseGoogleTTSReturn {
   }, []);
 
   const playText = useCallback(
-    (text: string, voice?: TTSVoice, speed?: number, onDone?: () => void) => {
+    (text: string, voice?: TTSVoice, speed?: number, onDone?: () => void, engine?: TTSEngine) => {
       if (busyRef.current) return;
       stop();
       busyRef.current = true;
@@ -60,7 +62,7 @@ export function useGoogleTTS(): UseGoogleTTSReturn {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      // Web Speech API fallback — keeps isPlaying reactive
+      // Web Speech API fallback
       const doFallback = () => {
         if (typeof window === 'undefined' || !window.speechSynthesis) {
           busyRef.current = false;
@@ -96,6 +98,7 @@ export function useGoogleTTS(): UseGoogleTTSReturn {
           text,
           voice: voice ?? 'nova',
           speed: speed ?? 1.0,
+          engine: engine ?? 'standard',
         }),
         signal: controller.signal,
       })

@@ -24,90 +24,22 @@ const demoProfile: Profile = {
   updated_at: null,
 };
 
-const learnCards = [
-  {
-    title: 'Vocabulary',
-    description: 'Learn new words and build your CELPIP vocabulary',
-    href: '/learn/vocabulary',
-    icon: '📚',
-    gradient: 'from-blue-500 to-blue-600',
-    lightBg: 'bg-blue-50',
-  },
-  {
-    title: 'Idioms',
-    description: 'Master common English idioms and expressions',
-    href: '/learn/idioms',
-    icon: '💬',
-    gradient: 'from-teal-500 to-teal-600',
-    lightBg: 'bg-teal-50',
-  },
-  {
-    title: 'Grammar',
-    description: 'Master grammar rules for better scores',
-    href: '/learn/grammar',
-    icon: '✏️',
-    gradient: 'from-purple-500 to-purple-600',
-    lightBg: 'bg-purple-50',
-  },
-  {
-    title: 'Reading',
-    description: 'Practice reading comprehension passages',
-    href: '/learn/reading',
-    icon: '📖',
-    gradient: 'from-green-500 to-emerald-600',
-    lightBg: 'bg-green-50',
-  },
-  {
-    title: 'Writing',
-    description: 'Practice emails and survey responses',
-    href: '/learn/writing',
-    icon: '✍️',
-    gradient: 'from-amber-500 to-orange-600',
-    lightBg: 'bg-amber-50',
-  },
-  {
-    title: 'Listening',
-    description: 'Improve listening with audio scripts',
-    href: '/learn/listening',
-    icon: '🎧',
-    gradient: 'from-cyan-500 to-blue-600',
-    lightBg: 'bg-cyan-50',
-  },
-  {
-    title: 'Patterns',
-    description: 'Learn sentence patterns for writing & speaking',
-    href: '/learn/patterns',
-    icon: '🧩',
-    gradient: 'from-pink-500 to-rose-600',
-    lightBg: 'bg-pink-50',
-  },
-  {
-    title: 'Shadowing',
-    description: 'Improve pronunciation with shadowing exercises',
-    href: '/learn/shadowing',
-    icon: '🔁',
-    gradient: 'from-violet-500 to-purple-600',
-    lightBg: 'bg-violet-50',
-  },
+const learnModules = [
+  { title: 'Vocabulary', href: '/learn/vocabulary', icon: '📚', desc: 'Build your word bank' },
+  { title: 'Grammar', href: '/learn/grammar', icon: '✏️', desc: 'Master grammar rules' },
+  { title: 'Idioms', href: '/learn/idioms', icon: '💬', desc: 'Learn expressions' },
+  { title: 'Patterns', href: '/learn/patterns', icon: '🧩', desc: 'Sentence patterns' },
+  { title: 'Daily Speaking', href: '/speaking/practice', icon: '🗣️', desc: 'Chat with Mia' },
+  { title: 'AI Coach', href: '/coach', icon: '🤖', desc: 'Personal tutor' },
 ];
 
-const examCards = [
-  {
-    title: 'Speaking Practice',
-    description: 'Practice speaking with AI voice coach',
-    href: '/speaking',
-    icon: '🎤',
-    gradient: 'from-rose-500 to-pink-600',
-    lightBg: 'bg-rose-50',
-  },
-  {
-    title: 'Mock Exam',
-    description: 'Take a full CELPIP practice test',
-    href: '/exam',
-    icon: '📝',
-    gradient: 'from-indigo-500 to-violet-600',
-    lightBg: 'bg-indigo-50',
-  },
+const celpipModules = [
+  { title: 'Mock Exam', href: '/exam', icon: '🎯', desc: 'Full practice test' },
+  { title: 'Exam Speaking', href: '/speaking/exam', icon: '🎤', desc: 'Timed speaking tasks' },
+  { title: 'Reading', href: '/learn/reading', icon: '📄', desc: 'Reading comprehension' },
+  { title: 'Writing', href: '/learn/writing', icon: '✍️', desc: 'Email & survey tasks' },
+  { title: 'Listening', href: '/learn/listening', icon: '🎧', desc: 'Audio practice' },
+  { title: 'Placement Test', href: '/placement-test', icon: '📊', desc: 'Find your level' },
 ];
 
 export default async function DashboardPage() {
@@ -219,51 +151,71 @@ export default async function DashboardPage() {
       {/* Continue Learning (client-side, reads localStorage mastery) */}
       <ContinueLearning />
 
-      {/* Learn Section */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Learn</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {learnCards.map((card) => (
-            <Link
-              key={card.href}
-              href={card.href}
-              className="group flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} text-2xl shadow-sm`}>
-                {card.icon}
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">
-                  {card.title}
-                </h3>
-                <p className="mt-0.5 text-sm text-gray-500">{card.description}</p>
-              </div>
-            </Link>
-          ))}
+      {/* Two Main Section Cards */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Learn English Card */}
+        <div className="rounded-2xl border-2 border-green-200 bg-white overflow-hidden">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4">
+            <h2 className="text-lg font-bold text-white">Learn English</h2>
+            <p className="text-sm text-white/80">Build your English foundation</p>
+          </div>
+          <div className="p-5 space-y-2">
+            {learnModules.map((mod) => (
+              <Link
+                key={mod.href}
+                href={mod.href}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 transition-colors group"
+              >
+                <span className="text-xl w-8 text-center">{mod.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold text-gray-800 group-hover:text-green-700">
+                    {mod.title}
+                  </span>
+                  <p className="text-xs text-gray-400">{mod.desc}</p>
+                </div>
+                <svg className="w-4 h-4 text-gray-300 group-hover:text-green-500 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Practice & Exam Section */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Practice & Exam</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {examCards.map((card) => (
-            <Link
-              key={card.href}
-              href={card.href}
-              className="group flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} text-2xl shadow-sm`}>
-                {card.icon}
-              </div>
+        {/* CELPIP Preparation Card */}
+        <div className="rounded-2xl border-2 border-blue-200 bg-white overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">
-                  {card.title}
-                </h3>
-                <p className="mt-0.5 text-sm text-gray-500">{card.description}</p>
+                <h2 className="text-lg font-bold text-white">CELPIP Preparation</h2>
+                <p className="text-sm text-white/80">Get ready for your CELPIP exam</p>
               </div>
-            </Link>
-          ))}
+              <div className="bg-white/20 rounded-lg px-3 py-1">
+                <span className="text-xs font-bold text-white">
+                  CLB {profile.current_clb_level || '?'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="p-5 space-y-2">
+            {celpipModules.map((mod) => (
+              <Link
+                key={mod.href}
+                href={mod.href}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition-colors group"
+              >
+                <span className="text-xl w-8 text-center">{mod.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-700">
+                    {mod.title}
+                  </span>
+                  <p className="text-xs text-gray-400">{mod.desc}</p>
+                </div>
+                <svg className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -14,7 +14,6 @@ import {
   PuzzleIcon,
   HeadphonesIcon,
   MicIcon,
-  RepeatIcon,
   ClipboardListIcon,
   UserIcon,
   LogOutIcon,
@@ -23,6 +22,9 @@ import {
   MenuIcon,
   XIcon,
   SparklesIcon,
+  ChatIcon,
+  TargetIcon,
+  BarChartIcon,
 } from '@/components/ui/icons';
 import { Breadcrumbs } from './breadcrumbs';
 import { getModuleStats, type ModuleName } from '@/lib/progress/cross-tracker';
@@ -33,24 +35,45 @@ interface DashboardShellProps {
   children: React.ReactNode;
 }
 
-const navItems: {
+interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   module?: ModuleName;
-}[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { label: 'Vocabulary', href: '/learn/vocabulary', icon: BookIcon, module: 'vocabulary' },
-  { label: 'Idioms', href: '/learn/idioms', icon: BookIcon, module: 'idioms' },
-  { label: 'Grammar', href: '/learn/grammar', icon: PencilIcon, module: 'grammar' },
-  { label: 'Reading', href: '/learn/reading', icon: GlassesIcon, module: 'reading' },
-  { label: 'Writing', href: '/learn/writing', icon: FileTextIcon, module: 'writing' },
-  { label: 'Listening', href: '/learn/listening', icon: HeadphonesIcon, module: 'listening' },
-  { label: 'Patterns', href: '/learn/patterns', icon: PuzzleIcon, module: 'patterns' },
-  { label: 'Shadowing', href: '/learn/shadowing', icon: RepeatIcon, module: 'shadowing' },
-  { label: 'Speaking', href: '/speaking', icon: MicIcon, module: 'speaking' },
-  { label: 'Mock Exam', href: '/exam', icon: ClipboardListIcon },
-  { label: 'AI Coach', href: '/coach', icon: SparklesIcon },
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    title: 'Learn English',
+    items: [
+      { label: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+      { label: 'Vocabulary', href: '/learn/vocabulary', icon: BookIcon, module: 'vocabulary' },
+      { label: 'Grammar', href: '/learn/grammar', icon: PencilIcon, module: 'grammar' },
+      { label: 'Idioms', href: '/learn/idioms', icon: ChatIcon, module: 'idioms' },
+      { label: 'Patterns', href: '/learn/patterns', icon: PuzzleIcon, module: 'patterns' },
+      { label: 'Daily Speaking', href: '/speaking/practice', icon: MicIcon, module: 'speaking' },
+      { label: 'AI Coach', href: '/coach', icon: SparklesIcon },
+    ],
+  },
+  {
+    title: 'CELPIP Prep',
+    items: [
+      { label: 'Mock Exam', href: '/exam', icon: TargetIcon },
+      { label: 'Exam Speaking', href: '/speaking/exam', icon: MicIcon },
+      { label: 'Reading', href: '/learn/reading', icon: GlassesIcon, module: 'reading' },
+      { label: 'Writing', href: '/learn/writing', icon: FileTextIcon, module: 'writing' },
+      { label: 'Listening', href: '/learn/listening', icon: HeadphonesIcon, module: 'listening' },
+      { label: 'Placement Test', href: '/placement-test', icon: BarChartIcon },
+    ],
+  },
+];
+
+const bottomItems: NavItem[] = [
   { label: 'Profile', href: '/profile', icon: UserIcon },
 ];
 
@@ -60,7 +83,6 @@ export function DashboardShell({ profile, userEmail, children }: DashboardShellP
   const [moduleProgress, setModuleProgress] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    // Defer progress calculation so it doesn't block navigation/rendering
     const compute = () => {
       const stats = getModuleStats();
       const map: Record<string, number> = {};
@@ -86,6 +108,45 @@ export function DashboardShell({ profile, userEmail, children }: DashboardShellP
     .join('')
     .toUpperCase()
     .slice(0, 2);
+
+  const isActive = (href: string) =>
+    href === '/dashboard'
+      ? pathname === '/dashboard'
+      : pathname.startsWith(href);
+
+  const renderNavItem = (item: NavItem) => {
+    const active = isActive(item.href);
+    const Icon = item.icon;
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => setSidebarOpen(false)}
+        className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+          active
+            ? 'bg-blue-50 text-blue-700'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        }`}
+      >
+        <Icon className={`h-[18px] w-[18px] ${active ? 'text-blue-600' : 'text-gray-400'}`} />
+        <span className="flex-1">{item.label}</span>
+        {item.module && moduleProgress[item.module] !== undefined && moduleProgress[item.module] > 0 && (
+          <span
+            className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+              moduleProgress[item.module] >= 100
+                ? 'bg-green-100 text-green-700'
+                : moduleProgress[item.module] >= 50
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-100 text-gray-500'
+            }`}
+          >
+            {moduleProgress[item.module]}%
+          </span>
+        )}
+      </Link>
+    );
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -121,44 +182,23 @@ export function DashboardShell({ profile, userEmail, children }: DashboardShellP
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {navItems.map((item) => {
-            const isActive =
-              item.href === '/dashboard'
-                ? pathname === '/dashboard'
-                : pathname.startsWith(item.href);
-            const Icon = item.icon;
+        {/* Navigation Sections */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          {navSections.map((section, idx) => (
+            <div key={section.title} className={idx > 0 ? 'mt-4' : ''}>
+              <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                {section.title}
+              </p>
+              <div className="space-y-0.5">
+                {section.items.map(renderNavItem)}
+              </div>
+            </div>
+          ))}
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                <span className="flex-1">{item.label}</span>
-                {item.module && moduleProgress[item.module] !== undefined && moduleProgress[item.module] > 0 && (
-                  <span
-                    className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
-                      moduleProgress[item.module] >= 100
-                        ? 'bg-green-100 text-green-700'
-                        : moduleProgress[item.module] >= 50
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-500'
-                    }`}
-                  >
-                    {moduleProgress[item.module]}%
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {/* Divider + Profile */}
+          <div className="mt-4 pt-3 border-t border-gray-100 space-y-0.5">
+            {bottomItems.map(renderNavItem)}
+          </div>
         </nav>
 
         {/* Sign out */}

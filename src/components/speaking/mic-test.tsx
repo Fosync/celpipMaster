@@ -29,7 +29,7 @@ export default function MicTest() {
           }
         } catch (err) {
           // Permission API might not support microphone query in some browsers
-          console.log('Permission query not supported:', err);
+          // Permission API might not support microphone query in all browsers — ignore
         }
       }
 
