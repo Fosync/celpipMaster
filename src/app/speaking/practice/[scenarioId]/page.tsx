@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { conversationScenarios, freeChat } from '@/lib/data/speaking';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
@@ -12,9 +12,21 @@ import ConversationSummary from '@/components/speaking/practice/conversation-sum
 import EndConversationButton from '@/components/speaking/practice/end-conversation-button';
 import MicButton from '@/components/speaking/mic-button';
 
+// Mood-based voice settings for Web Speech API fallback
+const MOOD_VOICE_SETTINGS: Record<string, { rate: number; pitch: number }> = {
+  happy: { rate: 1.0, pitch: 1.05 },
+  curious: { rate: 0.95, pitch: 1.1 },
+  surprised: { rate: 1.05, pitch: 1.2 },
+  empathetic: { rate: 0.85, pitch: 0.95 },
+  amused: { rate: 1.0, pitch: 1.1 },
+  thoughtful: { rate: 0.85, pitch: 0.9 },
+};
+
 export default function ConversationPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const scenarioId = params.scenarioId as string;
+  const difficulty = searchParams.get('difficulty') ?? 'medium';
 
   const scenario = scenarioId === 'free-chat'
     ? freeChat
@@ -26,9 +38,10 @@ export default function ConversationPage() {
   const tts = useGoogleTTS();
   const isSpeaking = tts.isPlaying || tts.isLoading;
 
-  // TTS function
-  const speak = useCallback((text: string) => {
-    tts.playText(text, 'nova', 0.9);
+  // Mood-aware TTS function
+  const speak = useCallback((text: string, mood?: string) => {
+    const settings = MOOD_VOICE_SETTINGS[mood ?? 'happy'] ?? MOOD_VOICE_SETTINGS.happy;
+    tts.playText(text, 'nova', settings.rate);
   }, [tts.playText]);
 
   // Conversation hook
@@ -36,6 +49,7 @@ export default function ConversationPage() {
     scenarioContext: scenario?.systemContext ?? '',
     openingLine: scenario?.openingLine ?? '',
     maxTurns: scenario?.maxTurns ?? 10,
+    difficulty,
     onSpeak: speak,
   });
 
@@ -45,13 +59,12 @@ export default function ConversationPage() {
   // Show summary when conversation ends
   useEffect(() => {
     if (conversation.isEnded && !showSummary) {
-      // Small delay to let the last message appear
       const timer = setTimeout(() => setShowSummary(true), 1500);
       return () => clearTimeout(timer);
     }
   }, [conversation.isEnded, showSummary]);
 
-  // Handle mic toggle
+  // Handle mic toggle — includes AI interruption
   const handleMicToggle = useCallback(() => {
     if (speechRecognition.isListening) {
       // Stop recording and send message
@@ -62,12 +75,14 @@ export default function ConversationPage() {
       }
       speechRecognition.reset();
     } else {
-      // Stop TTS if playing
-      tts.stop();
+      // Interrupt AI if speaking (user takes control)
+      if (isSpeaking) {
+        tts.stop();
+      }
       // Start recording
       speechRecognition.start();
     }
-  }, [speechRecognition, conversation, tts.stop]);
+  }, [speechRecognition, conversation, tts, isSpeaking]);
 
   // Handle end conversation
   const handleEnd = useCallback(() => {
@@ -75,7 +90,7 @@ export default function ConversationPage() {
     speechRecognition.reset();
     tts.stop();
     conversation.endConversation();
-  }, [speechRecognition, conversation, tts.stop]);
+  }, [speechRecognition, conversation, tts]);
 
   // Handle try again
   const handleTryAgain = useCallback(() => {
@@ -83,12 +98,12 @@ export default function ConversationPage() {
     speechRecognition.reset();
     tts.stop();
     conversation.reset();
-  }, [speechRecognition, conversation, tts.stop]);
+  }, [speechRecognition, conversation, tts]);
 
   // Speak message handler for chat bubbles
   const handleSpeakMessage = useCallback(
     (text: string) => {
-      speak(text);
+      speak(text, 'happy');
     },
     [speak]
   );
@@ -115,6 +130,7 @@ export default function ConversationPage() {
           totalTurns={conversation.turnNumber}
           corrections={conversation.allCorrections}
           newVocabulary={conversation.allVocabulary}
+          goodPhrases={conversation.allGoodPhrases}
           scenarioTitle={scenario.title}
           onTryAgain={handleTryAgain}
           onBackToScenarios={() => window.location.assign('/speaking/practice')}
@@ -158,6 +174,13 @@ export default function ConversationPage() {
             </h2>
             <p className="text-xs text-gray-400">
               Turn {conversation.turnNumber}/{scenario.maxTurns}
+              <span className="mx-1.5 text-gray-300">|</span>
+              <span className={`font-medium ${
+                difficulty === 'easy' ? 'text-green-500' :
+                difficulty === 'hard' ? 'text-red-500' : 'text-yellow-500'
+              }`}>
+                {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+              </span>
             </p>
           </div>
         </div>
@@ -165,9 +188,10 @@ export default function ConversationPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden bg-gray-50">
         <ConversationView
           messages={conversation.messages}
+          isLoading={conversation.isLoading}
           onSpeakMessage={handleSpeakMessage}
         />
       </div>
@@ -195,7 +219,7 @@ export default function ConversationPage() {
         )}
 
         {/* AI speaking indicator */}
-        {isSpeaking && (
+        {isSpeaking && !speechRecognition.isListening && (
           <div className="mb-3 flex items-center justify-center gap-2">
             <div className="flex gap-1">
               {[0, 1, 2].map((i) => (
@@ -208,7 +232,13 @@ export default function ConversationPage() {
                 />
               ))}
             </div>
-            <span className="text-xs text-blue-500 font-medium">AI is speaking...</span>
+            <span className="text-xs text-blue-500 font-medium">Mia is speaking...</span>
+            <button
+              onClick={() => tts.stop()}
+              className="text-xs text-gray-400 hover:text-gray-600 underline ml-1"
+            >
+              Skip
+            </button>
           </div>
         )}
 
@@ -234,7 +264,9 @@ export default function ConversationPage() {
               : micState === 'recording'
               ? 'Tap to send'
               : micState === 'processing'
-              ? 'AI is thinking...'
+              ? 'Mia is thinking...'
+              : isSpeaking
+              ? 'Tap to interrupt & speak'
               : 'Tap to speak'}
           </p>
         </div>

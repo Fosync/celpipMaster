@@ -9,6 +9,7 @@ export interface ConversationMessage {
   correction?: { original: string; corrected: string; tip: string } | null;
   feedback?: string;
   newVocabulary?: string[];
+  mood?: string;
 }
 
 interface AIResponse {
@@ -18,13 +19,17 @@ interface AIResponse {
   turn_number: number;
   should_end: boolean;
   new_vocabulary: string[];
+  mood?: string;
+  good_phrases?: string[] | null;
+  follow_up_topic?: string | null;
 }
 
 interface UseConversationOptions {
   scenarioContext: string;
   openingLine: string;
   maxTurns: number;
-  onSpeak?: (text: string) => void;
+  difficulty?: string;
+  onSpeak?: (text: string, mood?: string) => void;
 }
 
 interface UseConversationReturn {
@@ -34,6 +39,7 @@ interface UseConversationReturn {
   isEnded: boolean;
   allCorrections: { original: string; corrected: string; tip: string }[];
   allVocabulary: string[];
+  allGoodPhrases: string[];
   error: string | null;
   sendMessage: (transcript: string) => Promise<void>;
   endConversation: () => void;
@@ -46,7 +52,7 @@ function genId(): string {
 }
 
 export function useConversation(options: UseConversationOptions): UseConversationReturn {
-  const { scenarioContext, openingLine, maxTurns, onSpeak } = options;
+  const { scenarioContext, openingLine, maxTurns, difficulty, onSpeak } = options;
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [turnNumber, setTurnNumber] = useState(0);
@@ -56,8 +62,10 @@ export function useConversation(options: UseConversationOptions): UseConversatio
 
   const allCorrectionsRef = useRef<{ original: string; corrected: string; tip: string }[]>([]);
   const allVocabularyRef = useRef<string[]>([]);
+  const allGoodPhrasesRef = useRef<string[]>([]);
   const [allCorrections, setAllCorrections] = useState<{ original: string; corrected: string; tip: string }[]>([]);
   const [allVocabulary, setAllVocabulary] = useState<string[]>([]);
+  const [allGoodPhrases, setAllGoodPhrases] = useState<string[]>([]);
 
   // Add opening message on mount only
   const hasInitialized = useRef(false);
@@ -72,12 +80,13 @@ export function useConversation(options: UseConversationOptions): UseConversatio
         id: genId(),
         role: 'ai',
         text: openingLine,
+        mood: 'happy',
       };
       setMessages([aiMsg]);
 
       // Speak the opening line
       if (onSpeakRef.current) {
-        setTimeout(() => onSpeakRef.current?.(openingLine), 500);
+        setTimeout(() => onSpeakRef.current?.(openingLine, 'happy'), 500);
       }
     }
   }, [openingLine]);
@@ -115,6 +124,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
             conversationHistory: history,
             userTranscript: transcript.trim(),
             turnNumber: currentTurn,
+            difficulty,
           }),
         });
 
@@ -149,18 +159,30 @@ export function useConversation(options: UseConversationOptions): UseConversatio
           setAllVocabulary([...allVocabularyRef.current]);
         }
 
+        // Track good phrases
+        if (data.good_phrases && data.good_phrases.length > 0) {
+          allGoodPhrasesRef.current = [
+            ...allGoodPhrasesRef.current,
+            ...data.good_phrases.filter(
+              (p) => !allGoodPhrasesRef.current.includes(p)
+            ),
+          ];
+          setAllGoodPhrases([...allGoodPhrasesRef.current]);
+        }
+
         // Add AI response message
         const aiMsg: ConversationMessage = {
           id: genId(),
           role: 'ai',
           text: data.next_line,
           newVocabulary: data.new_vocabulary?.length ? data.new_vocabulary : undefined,
+          mood: data.mood || 'happy',
         };
         setMessages((prev) => [...prev, aiMsg]);
 
-        // Speak AI response
+        // Speak AI response with mood
         if (onSpeakRef.current) {
-          onSpeakRef.current(data.next_line);
+          onSpeakRef.current(data.next_line, data.mood);
         }
 
         // Check if conversation should end
@@ -175,7 +197,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
         setIsLoading(false);
       }
     },
-    [isEnded, isLoading, turnNumber, messages, scenarioContext, maxTurns]
+    [isEnded, isLoading, turnNumber, messages, scenarioContext, maxTurns, difficulty]
   );
 
   const endConversation = useCallback(() => {
@@ -191,8 +213,10 @@ export function useConversation(options: UseConversationOptions): UseConversatio
     setError(null);
     allCorrectionsRef.current = [];
     allVocabularyRef.current = [];
+    allGoodPhrasesRef.current = [];
     setAllCorrections([]);
     setAllVocabulary([]);
+    setAllGoodPhrases([]);
 
     // Re-initialize with opening line
     setTimeout(() => {
@@ -201,10 +225,11 @@ export function useConversation(options: UseConversationOptions): UseConversatio
         id: genId(),
         role: 'ai',
         text: openingLine,
+        mood: 'happy',
       };
       setMessages([aiMsg]);
       if (onSpeakRef.current) {
-        setTimeout(() => onSpeakRef.current?.(openingLine), 500);
+        setTimeout(() => onSpeakRef.current?.(openingLine, 'happy'), 500);
       }
     }, 100);
   }, [openingLine]);
@@ -216,6 +241,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
     isEnded,
     allCorrections,
     allVocabulary,
+    allGoodPhrases,
     error,
     sendMessage,
     endConversation,

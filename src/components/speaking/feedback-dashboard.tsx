@@ -39,10 +39,33 @@ function getClbGradient(level: number): string {
   return 'from-orange-500 to-red-500';
 }
 
-function getOverallColor(score: number): string {
-  if (score > 8) return 'text-green-600';
-  if (score >= 6) return 'text-yellow-600';
+function getCelpipScoreColor(score: number): string {
+  if (score >= 4) return 'text-green-600';
+  if (score >= 3) return 'text-blue-600';
+  if (score >= 2) return 'text-yellow-600';
   return 'text-red-600';
+}
+
+function ScoreBar({ label, score, max = 4 }: { label: string; score: number; max?: number }) {
+  const pct = (score / max) * 100;
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">{label}</span>
+        <span className={`font-bold ${getCelpipScoreColor(score)}`}>{score}/{max}</span>
+      </div>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${
+            score >= 4 ? 'bg-green-500' :
+            score >= 3 ? 'bg-blue-500' :
+            score >= 2 ? 'bg-yellow-500' : 'bg-red-500'
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function FeedbackDashboard({
@@ -56,6 +79,15 @@ export default function FeedbackDashboard({
 }: FeedbackDashboardProps) {
   const [modelAnswerOpen, setModelAnswerOpen] = useState(false);
 
+  // Convert 12-point scores to CELPIP 4-point rubric
+  const celpipScores = {
+    taskCompletion: Math.min(4, Math.round((feedback.scores.taskCompletion / 12) * 4)),
+    comprehensibility: Math.min(4, Math.round((feedback.scores.coherence / 12) * 4)),
+    vocabulary: Math.min(4, Math.round((feedback.scores.vocabulary / 12) * 4)),
+    grammar: Math.min(4, Math.round((feedback.scores.grammar / 12) * 4)),
+    fluency: Math.min(4, Math.round(((pronScore + fluencyScore) / 200) * 4)),
+  };
+
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-8">
       {/* Back link */}
@@ -63,15 +95,7 @@ export default function FeedbackDashboard({
         href={backHref}
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
       >
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
         Back
@@ -96,19 +120,22 @@ export default function FeedbackDashboard({
         </p>
       </div>
 
-      {/* Overall Score */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 text-center">
-        <p className="text-sm text-gray-500 mb-1">Overall Score</p>
-        <p className={`text-4xl font-bold ${getOverallColor(feedback.scores.overall)}`}>
-          {feedback.scores.overall}
-          <span className="text-lg text-gray-400 font-normal">/12</span>
-        </p>
+      {/* CELPIP Rubric Scores */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+          CELPIP Speaking Rubric
+        </h3>
+        <ScoreBar label="Task Completion" score={celpipScores.taskCompletion} />
+        <ScoreBar label="Comprehensibility" score={celpipScores.comprehensibility} />
+        <ScoreBar label="Vocabulary" score={celpipScores.vocabulary} />
+        <ScoreBar label="Grammar" score={celpipScores.grammar} />
+        <ScoreBar label="Fluency" score={celpipScores.fluency} />
       </div>
 
       {/* Score Radar (5 categories) */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-          Score Breakdown
+          Detailed Breakdown
         </h3>
         <ScoreRadar
           scores={{
@@ -133,15 +160,7 @@ export default function FeedbackDashboard({
                 key={i}
                 className="flex items-start gap-2.5 bg-green-50 border border-green-100 rounded-lg px-4 py-3"
               >
-                <svg
-                  className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
                 <span className="text-sm text-green-800">{strength}</span>
@@ -163,15 +182,7 @@ export default function FeedbackDashboard({
                 key={i}
                 className="flex items-start gap-2.5 bg-orange-50 border border-orange-100 rounded-lg px-4 py-3"
               >
-                <svg
-                  className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="19" x2="12" y2="5" />
                   <polyline points="5 12 12 5 19 12" />
                 </svg>
@@ -192,10 +203,10 @@ export default function FeedbackDashboard({
         </div>
       )}
 
-      {/* Pronunciation Section */}
+      {/* Pronunciation Heatmap */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
         <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-          Pronunciation Analysis
+          Pronunciation Heatmap
         </h3>
 
         {/* Pronunciation & Fluency Scores */}
@@ -204,11 +215,8 @@ export default function FeedbackDashboard({
             <p className="text-xs text-gray-500 mb-1">Pronunciation</p>
             <p
               className={`text-2xl font-bold ${
-                pronScore > 80
-                  ? 'text-green-600'
-                  : pronScore >= 60
-                  ? 'text-yellow-600'
-                  : 'text-red-600'
+                pronScore > 80 ? 'text-green-600' :
+                pronScore >= 60 ? 'text-yellow-600' : 'text-red-600'
               }`}
             >
               {pronScore}
@@ -219,11 +227,8 @@ export default function FeedbackDashboard({
             <p className="text-xs text-gray-500 mb-1">Fluency</p>
             <p
               className={`text-2xl font-bold ${
-                fluencyScore > 80
-                  ? 'text-green-600'
-                  : fluencyScore >= 60
-                  ? 'text-yellow-600'
-                  : 'text-red-600'
+                fluencyScore > 80 ? 'text-green-600' :
+                fluencyScore >= 60 ? 'text-yellow-600' : 'text-red-600'
               }`}
             >
               {fluencyScore}
@@ -232,10 +237,10 @@ export default function FeedbackDashboard({
           </div>
         </div>
 
-        {/* Word-level Scores */}
+        {/* Word-level Heatmap */}
         {wordScores.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 mb-2 font-medium">Word Accuracy</p>
+            <p className="text-xs text-gray-500 mb-2 font-medium">Click a word to see details</p>
             <WordScores words={wordScores} />
           </div>
         )}

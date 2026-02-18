@@ -8,6 +8,7 @@ interface ScenarioCardProps {
   description: string;
   icon: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  href?: string;
 }
 
 const difficultyConfig: Record<
@@ -40,12 +41,13 @@ export default function ScenarioCard({
   description,
   icon,
   difficulty,
+  href,
 }: ScenarioCardProps) {
   const config = difficultyConfig[difficulty];
 
   return (
     <Link
-      href={`/speaking/practice/${id}`}
+      href={href || `/speaking/practice/${id}`}
       className="block bg-white rounded-xl border border-gray-200 p-5 transition-all duration-200 hover:shadow-lg hover:border-gray-300 hover:-translate-y-0.5 group"
     >
       <div className="flex items-start justify-between gap-3 mb-2">

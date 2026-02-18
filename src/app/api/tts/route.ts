@@ -10,6 +10,9 @@ const VOICE_MAP: Record<string, { name: string; ssmlGender: string }> = {
   'onyx':    { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
   'echo':    { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
   'fable':   { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
+  // Generic gender names
+  'female': { name: 'en-US-Neural2-C', ssmlGender: 'FEMALE' },
+  'male':   { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
   // Legacy Google voice names (backwards compat)
   'en-US-Neural2-C': { name: 'en-US-Neural2-C', ssmlGender: 'FEMALE' },
   'en-US-Neural2-D': { name: 'en-US-Neural2-D', ssmlGender: 'MALE' },
